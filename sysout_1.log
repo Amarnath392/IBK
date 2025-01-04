@@ -1,0 +1,68 @@
+[W] > nextValidId
+[W] > managedAccounts
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:uscrypto
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:usfarm.nj
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:usfuture
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:cashfarm
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:usfarm
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:euhmds
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:cashhmds
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:fundfarm
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:ushmds
+[W] > Error id=-1 code=2158 msg=Sec-def data farm connection is OK:secdefil
+[W] > nextValidId
+[W] > managedAccounts
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:uscrypto
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:usfarm.nj
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:usfuture
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:cashfarm
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:usfarm
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:euhmds
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:cashhmds
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:fundfarm
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:ushmds
+[W] > Error id=-1 code=2158 msg=Sec-def data farm connection is OK:secdefil
+[W] > Error id=1734611254 code=416 msg=RFQ is not applicable for the contract. Order ID:1734611254
+[W] > Error id=-1 code=1100 msg=Connectivity between IBKR and Trader Workstation has been lost.
+[W] > Error id=-1 code=2103 msg=Market data farm connection is broken:uscrypto
+[W] > Error id=-1 code=2103 msg=Market data farm connection is broken:usfarm.nj
+[W] > Error id=-1 code=2103 msg=Market data farm connection is broken:usfuture
+[W] > Error id=-1 code=2103 msg=Market data farm connection is broken:cashfarm
+[W] > Error id=-1 code=2103 msg=Market data farm connection is broken:usfarm
+[W] > Error id=-1 code=2157 msg=Sec-def data farm connection is broken:secdefil
+[W] > Error id=-1 code=2105 msg=HMDS data farm connection is broken:euhmds
+[W] > Error id=-1 code=2105 msg=HMDS data farm connection is broken:cashhmds
+[W] > Error id=-1 code=2105 msg=HMDS data farm connection is broken:fundfarm
+[W] > Error id=-1 code=2105 msg=HMDS data farm connection is broken:ushmds
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:ushmds
+[W] > Error id=-1 code=2158 msg=Sec-def data farm connection is OK:secdefil
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:cashhmds
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:usfuture
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:fundfarm
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:cashfarm
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:usfarm.nj
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:uscrypto
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:usfarm
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:euhmds
+[W] > Error id=-1 code=1102 msg=Connectivity between IBKR and Trader Workstation has been restored - data maintained. All data farms are connected: uscrypto; usfarm.nj; usfuture; cashfarm; usfarm; euhmds; cashhmds; fundfarm; ushmds; secdefil.
+[W] > Error id=-1 code=2103 msg=Market data farm connection is broken:usfuture
+[W] > Error id=-1 code=2105 msg=HMDS data farm connection is broken:ushmds
+[W] > Error id=-1 code=2105 msg=HMDS data farm connection is broken:cashhmds
+[W] > Error id=-1 code=2157 msg=Sec-def data farm connection is broken:secdefil
+[W] > Error id=-1 code=2105 msg=HMDS data farm connection is broken:fundfarm
+[W] > Error id=-1 code=2103 msg=Market data farm connection is broken:usfarm.nj
+[W] > Error id=-1 code=2103 msg=Market data farm connection is broken:cashfarm
+[W] > Error id=-1 code=2103 msg=Market data farm connection is broken:usfarm
+[W] > Error id=-1 code=2103 msg=Market data farm connection is broken:uscrypto
+[W] > Error id=-1 code=2105 msg=HMDS data farm connection is broken:euhmds
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:euhmds
+[W] > Error id=-1 code=2158 msg=Sec-def data farm connection is OK:secdefil
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:usfuture
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:cashhmds
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:ushmds
+[W] > Error id=-1 code=2106 msg=HMDS data farm connection is OK:fundfarm
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:cashfarm
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:usfarm.nj
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:usfarm
+[W] > Error id=-1 code=2104 msg=Market data farm connection is OK:uscrypto
+--------------------- CLOSED ---------------------
