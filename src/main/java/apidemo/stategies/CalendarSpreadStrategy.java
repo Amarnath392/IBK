@@ -1,9 +1,6 @@
 package apidemo.stategies;
 
-import apidemo.util.HtmlButton;
-import apidemo.util.IConnectionConfiguration;
-import apidemo.util.NewTabbedPanel;
-import apidemo.util.VerticalPanel;
+import apidemo.util.*;
 import com.ib.controller.ApiConnection;
 import com.ib.controller.ApiController;
 import com.ib.controller.ApiController.IConnectionHandler;
@@ -16,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CalendarSpreadStrategy implements IConnectionHandler {
+    static { NewLookAndFeel.register(); }
     public static CalendarSpreadStrategy INSTANCE;
     private final IConnectionConfiguration m_connectionConfiguration;
     private final JTextArea m_inLog = new JTextArea();
@@ -27,6 +25,7 @@ public class CalendarSpreadStrategy implements IConnectionHandler {
 
     private final JFrame m_frame = new JFrame();
     private final ConnectionPanel m_connectionPanel;
+    private final CalendarSpreadStrategyPanel calendarSpreadStrategyPanel = new CalendarSpreadStrategyPanel();
     private final NewTabbedPanel m_tabbedPanel = new NewTabbedPanel(true);
     private final JTextArea m_msg = new JTextArea();
 
@@ -62,7 +61,7 @@ public class CalendarSpreadStrategy implements IConnectionHandler {
 
     private void run() {
         m_tabbedPanel.addTab("Connection", m_connectionPanel);
-
+        m_tabbedPanel.addTab("Calendar spread strategy", calendarSpreadStrategyPanel);
 
         m_msg.setEditable( false);
         m_msg.setLineWrap( true);
@@ -81,16 +80,15 @@ public class CalendarSpreadStrategy implements IConnectionHandler {
         bot.addTab( "Log (out)", outLogScroll);
         bot.addTab( "Log (in)", inLogScroll);
 
-        m_frame.add( m_tabbedPanel);
-        m_frame.add( bot, BorderLayout.SOUTH);
-        m_frame.setSize( 1024, 768);
-        m_frame.setVisible( true);
+        m_frame.add(m_tabbedPanel);
+        m_frame.add(bot, BorderLayout.SOUTH);
+        m_frame.setSize(1024, 768);
+        m_frame.setVisible(true);
         m_frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
 
         controller().connect( "127.0.0.1", 7496, 0,
                 m_connectionConfiguration.getDefaultConnectOptions() != null ? m_connectionConfiguration.getDefaultConnectOptions() : null);
-
     }
 
 
