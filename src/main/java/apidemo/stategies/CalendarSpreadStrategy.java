@@ -87,7 +87,7 @@ public class CalendarSpreadStrategy implements IConnectionHandler {
         m_frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
 
-        controller().connect( "127.0.0.1", 7496, 0,
+        controller().connect( "127.0.0.1", 7497, 0,
                 m_connectionConfiguration.getDefaultConnectOptions() != null ? m_connectionConfiguration.getDefaultConnectOptions() : null);
     }
 
