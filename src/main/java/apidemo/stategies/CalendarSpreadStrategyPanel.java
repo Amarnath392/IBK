@@ -8,6 +8,8 @@ import com.ib.controller.ApiController;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.beans.PropertyChangeListener;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -36,18 +38,15 @@ public class CalendarSpreadStrategyPanel extends JPanel {
     transient ApiController.TopMktDataAdapter m_stockListener = new ApiController.TopMktDataAdapter() {
         @Override public void tickPrice(TickType tickType, double price, TickAttrib attribs) {
             if (tickType == TickType.LAST || tickType == TickType.DELAYED_LAST || tickType == TickType.CLOSE) { //TODO: Remove close
-                m_spotPrice.setText( "" + customRound(price));
-                CalendarSpreadStrategy.INSTANCE.controller().cancelTopMktData(m_stockListener);
+                populateDefaults(customRound(price));
 
-                createAndPopulateContracts(m_spotPrice.getDouble());
+                CalendarSpreadStrategy.INSTANCE.controller().cancelTopMktData(m_stockListener);
             }
         }
     };
 
-    private void createAndPopulateContracts(double spotPrice) {
-        createContracts(spotPrice);
-
-        //
+    private void createAndPopulateContracts() {
+        createContracts();
         populateContractDetails(m_callSellContract, ContractType.CALL_SELL);
         populateContractDetails(m_putSellContract, ContractType.PUT_SELL);
         populateContractDetails(m_callBuyContract, ContractType.CALL_BUY);
@@ -60,6 +59,43 @@ public class CalendarSpreadStrategyPanel extends JPanel {
         setLayout(new BorderLayout());
         add(p, BorderLayout.WEST);
         add(butPanel);
+        m_useSellStikesForBuying.addActionListener(new Action() {
+            @Override
+            public Object getValue(String key) {
+                return m_useSellStikesForBuying.isSelected();
+            }
+
+            @Override
+            public void putValue(String key, Object value) {
+            }
+
+            @Override
+            public void setEnabled(boolean b) {
+            }
+
+            @Override
+            public boolean isEnabled() {
+                return false;
+            }
+
+            @Override
+            public void addPropertyChangeListener(PropertyChangeListener listener) {
+
+            }
+
+            @Override
+            public void removePropertyChangeListener(PropertyChangeListener listener) {
+
+            }
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (m_useSellStikesForBuying.isSelected())
+                    m_buyLegLengthFromSellPrice.setVisible(false);
+                else
+                    m_buyLegLengthFromSellPrice.setVisible(true);
+            }
+        });
     }
 
     private VerticalPanel getInputPanel() {
@@ -75,17 +111,17 @@ public class CalendarSpreadStrategyPanel extends JPanel {
 
     private VerticalPanel getButtonPanel() {
 
-        HtmlButton populateDates = new HtmlButton("Populate dates") {
+        HtmlButton populateDefaults = new HtmlButton("Populate defaults") {
             @Override
             protected void actionPerformed() {
-                populateDates();
+                fetchCurrentSPYPrice();
             }
         };
 
         HtmlButton populateContracts = new HtmlButton("Populate contracts") {
             @Override
             protected void actionPerformed() {
-                populateContractDetails();
+                createAndPopulateContracts();
             }
         };
 
@@ -97,15 +133,23 @@ public class CalendarSpreadStrategyPanel extends JPanel {
         };
 
         VerticalPanel butPanel = new VerticalPanel();
-        butPanel.add(populateDates);
+        butPanel.add(populateDefaults);
         butPanel.add(populateContracts);
         butPanel.add(placeOrder);
         return butPanel;
     }
 
+    private void populateDefaults(double spotPrice) {
+        m_spotPrice.setText( "" + customRound(spotPrice));
+        populateDates();
+        m_sellLegLengthFromSpotPrice.setText(5);
+        m_useSellStikesForBuying.setSelected(false);
+        m_buyLegLengthFromSellPrice.setText(3);
+    }
+
     private void populateDates() {
+        //Populate Dates
         LocalDate todayDate = LocalDate.now();
-        // Create Calendar instance and set it to today's date
         Calendar calendar = Calendar.getInstance();
         calendar.set(todayDate.getYear(), todayDate.getMonthValue() - 1, todayDate.getDayOfMonth());
         Date today = calendar.getTime();
@@ -134,10 +178,6 @@ public class CalendarSpreadStrategyPanel extends JPanel {
         });
     }
 
-    protected void populateContractDetails() {
-        onOK();
-    }
-
     protected void onPlaceOrder() {
         Contract comboContract = new Contract();
         comboContract.symbol("SPY");
@@ -158,14 +198,6 @@ public class CalendarSpreadStrategyPanel extends JPanel {
         CalendarSpreadStrategy.INSTANCE.controller().placeOrModifyOrder(comboContract, comboOrder, null);
     }
 
-    private void onOK() {
-        if (m_spotPrice.getText().isEmpty()) {
-            fetchCurrentSPYPrice();
-        } else {
-
-        }
-    }
-
     // Fetch the current SPY price if the spot price is not provided
     private void fetchCurrentSPYPrice() {
         Contract spyContract = new Contract();
@@ -177,16 +209,20 @@ public class CalendarSpreadStrategyPanel extends JPanel {
     }
 
     // Populate contracts based on the spot price
-    private void createContracts(double spotPrice) {
+    private void createContracts() {
+        double spotPrice = m_spotPrice.getDouble();
         String dateAfter7Days = m_currentExpiryDate.getText();
         String dateAfter14Days = m_nextExpiryDate.getText();
 
-        m_callSellContract = createOptionContract("C", spotPrice + m_sellLegLengthFromSpotPrice.getDouble(), dateAfter7Days);
-        m_putSellContract = createOptionContract("P", spotPrice - m_sellLegLengthFromSpotPrice.getDouble(), dateAfter7Days);
+        double sellDelta = subZero(m_sellLegLengthFromSpotPrice.getDouble(), 5);
+        m_callSellContract = createOptionContract("C", spotPrice + sellDelta, dateAfter7Days);
+        m_putSellContract = createOptionContract("P", spotPrice - sellDelta, dateAfter7Days);
 
-        m_callBuyContract = createOptionContract("C", spotPrice + m_buyLegLengthFromSellPrice.getDouble(), dateAfter14Days);
-        m_putBuyContract = createOptionContract("P", spotPrice - m_buyLegLengthFromSellPrice.getDouble(), dateAfter14Days);
+        double callDelta = m_useSellStikesForBuying.isSelected() ? sellDelta : sellDelta + subZero(m_buyLegLengthFromSellPrice.getDouble(), 3);
+        m_callBuyContract = createOptionContract("C", spotPrice + callDelta, dateAfter14Days);
+        m_putBuyContract = createOptionContract("P", spotPrice - callDelta, dateAfter14Days);
     }
+
 
     private Contract createOptionContract(String right, double strike, String date) {
         Contract contract = new Contract();
@@ -244,5 +280,9 @@ public class CalendarSpreadStrategyPanel extends JPanel {
         } else {
             return Math.floor(value); // Round down
         }
+    }
+
+    public static double subZero(double value, double elseValue) {
+        return value > 0 ? value : elseValue;
     }
 }
