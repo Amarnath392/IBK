@@ -24,6 +24,9 @@ public class CalendarSpreadStrategyPanel extends JPanel {
     private UpperField m_sellLegLengthFromSpotPrice = new UpperField();
     private JCheckBox m_useSellStikesForBuying = new JCheckBox();
     private UpperField m_buyLegLengthFromSellPrice = new UpperField();
+    HtmlButton placeOrder;
+    private int contractsFetched = 0;
+    private static final int TOTAL_CONTRACTS = 4;
 
     private Contract m_putSellContract, m_callSellContract, m_putBuyContract, m_callBuyContract;
 
@@ -122,16 +125,18 @@ public class CalendarSpreadStrategyPanel extends JPanel {
             @Override
             protected void actionPerformed() {
                 createAndPopulateContracts();
+                placeOrder.setVisible(true);
             }
         };
 
-        HtmlButton placeOrder = new HtmlButton("Place order") {
+        placeOrder = new HtmlButton("Place order") {
             @Override
             protected void actionPerformed() {
                 onPlaceOrder();
             }
         };
 
+        placeOrder.setVisible(false);
         VerticalPanel butPanel = new VerticalPanel();
         butPanel.add(populateDefaults);
         butPanel.add(populateContracts);
@@ -171,9 +176,18 @@ public class CalendarSpreadStrategyPanel extends JPanel {
 
     protected void populateContractDetails(Contract contract, final ContractType type) {
         CalendarSpreadStrategy.INSTANCE.controller().reqContractDetails(contract, list -> {
+            if (list.size() > 1) {
+                CalendarSpreadStrategy.INSTANCE.show("ERROR: More than one contract details found for given contract.");
+                return;
+            }
+
             for (ContractDetails details : list) {
-                System.out.println(details.contract());
                 populateLegs(details.contract(), type);
+            }
+
+            contractsFetched++;
+            if (contractsFetched == TOTAL_CONTRACTS) {
+                placeOrder.setVisible(true);
             }
         });
     }
