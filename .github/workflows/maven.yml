@@ -38,7 +38,6 @@ jobs:
                    --win-shortcut `
                    --win-menu `
                    --win-menu-group "TBI App" `
-                   --icon src/main/resources/TBI.ico `
                    --runtime-image "C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\21.0.6-7.0\x64" `
                    --dest target/
 
