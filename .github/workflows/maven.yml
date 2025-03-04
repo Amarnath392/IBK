@@ -47,6 +47,10 @@ jobs:
         run: |
           & C:\Program` Files` `(x86`)\Launch4j\launch4j.exe config/launch4j-config.xml
 
+      - name: Debug - After execution List Target Directory Contents
+        run: |
+          ls target
+
       - name: Debug - Verify EXE Generation
         run: |
           if (Test-Path "target/TBI.exe") {
