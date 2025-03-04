@@ -44,7 +44,7 @@ jobs:
       - name: Debug - Verify EXE Generation
         run: |
           ls target
-          if (Test-Path "target/TBI.exe") {
+          if (Test-Path "target/TBI-1.0.exe") {
             Write-Host "✅ EXE file created successfully"
           } else {
             Write-Host "❌ EXE file not found!"
@@ -55,4 +55,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-exe
-          path: target/TBI.exe
+          path: target/TBI-1.0.exe
