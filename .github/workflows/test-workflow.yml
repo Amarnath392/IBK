@@ -14,6 +14,8 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+
+
       - name: Verify Java Version for Launch4j
         run: |
           $env:JAVA_HOME="C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\21.0.6-7.0\x64"
@@ -32,6 +34,10 @@ jobs:
             Write-Host "❌ Launch4j installation not found!"
             exit 1
           }
+
+      - name: Check Java Installation Path
+        run: where java
+        shell: pwsh
 
       - name: Convert JAR to EXE
         run: |
