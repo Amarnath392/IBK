@@ -22,40 +22,31 @@ jobs:
       - name: Build JAR using Maven
         run: mvn clean package
 
-      - name: Install Launch4j
-        run: choco install launch4j -y
-
-      - name: Verify Launch4j Installation
-        run: |
-          if (Test-Path "C:\Program Files (x86)\Launch4j") {
-            Write-Host "✅ Launch4j is installed at C:\Program Files (x86)\Launch4j"
-          } else {
-            Write-Host "❌ Launch4j installation not found!"
-            exit 1
-          }
-
       - name: Debug - List Target Directory Contents
         run: |
           ls target
 
-      - name: Debug - Check Configuration File
+      - name: Create Windows Installer using jpackage
         run: |
-          ls config
-          cat config/launch4j-config.xml
-
-      - name: Convert JAR to EXE
-        run: |
-          & C:\Program` Files` `(x86`)\Launch4j\launch4jc.exe config/launch4j-config.xml
-
-      - name: Debug - After execution List Target Directory Contents
-        run: |
-          ls target
+          jpackage --input target/ `
+                   --name TBI `
+                   --main-jar TBI-1.0-SNAPSHOT.jar `
+                   --main-class apidemo.stategies.TradingStrategies `
+                   --type exe `
+                   --win-console `
+                   --win-dir-chooser `
+                   --win-shortcut `
+                   --win-menu `
+                   --win-menu-group "TBI App" `
+                   --icon src/main/resources/TBI.ico `
+                   --runtime-image "C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\21.0.6-7.0\x64" `
+                   --dest target/
 
       - name: Debug - Verify EXE Generation
         run: |
+          ls target
           if (Test-Path "target/TBI.exe") {
             Write-Host "✅ EXE file created successfully"
-            ls target
           } else {
             Write-Host "❌ EXE file not found!"
             exit 1
