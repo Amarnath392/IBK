@@ -3,7 +3,7 @@ name: Build JAR and Create EXE
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build:
