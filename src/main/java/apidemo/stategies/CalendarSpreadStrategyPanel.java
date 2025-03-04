@@ -27,6 +27,7 @@ public class CalendarSpreadStrategyPanel extends JPanel {
     private JDateChooser m_nextExpiryDate;
     private final UpperField m_spotPrice = new UpperField();
     private UpperField m_sellLegLengthFromSpotPrice = new UpperField();
+    private UpperField m_quantity = new UpperField();
     private JCheckBox m_useSellStikesForBuying = new JCheckBox();
     private UpperField m_buyLegLengthFromSellPrice = new UpperField();
     private final JLabel m_status = new JLabel();
@@ -159,6 +160,7 @@ public class CalendarSpreadStrategyPanel extends JPanel {
         p.add("Sell legs length from spot", m_sellLegLengthFromSpotPrice);
         p.add("Use Sell strikes for buying", m_useSellStikesForBuying);
         p.add("Buy legs length from sell", m_buyLegLengthFromSellPrice);
+        p.add("Quantity", m_quantity);
         return p;
     }
 
@@ -204,6 +206,7 @@ public class CalendarSpreadStrategyPanel extends JPanel {
             m_useSellStikesForBuying.setSelected(false);
             m_buyLegLengthFromSellPrice.setVisible(true);
             m_buyLegLengthFromSellPrice.setText(3);
+            m_quantity.setText("1");
             m_status.setText("Default values loaded successfully.");
         });
     }
@@ -260,7 +263,7 @@ public class CalendarSpreadStrategyPanel extends JPanel {
         comboOrder.orderType("LMT");
         comboOrder.lmtPrice(0.50);
         comboOrder.action("BUY");
-        comboOrder.totalQuantity(Decimal.get(1));
+        comboOrder.totalQuantity(Decimal.get(m_quantity.getInt()));
         comboOrder.tif("GTC");
 
         m_parent.controller().placeOrModifyOrder(comboContract, comboOrder,
