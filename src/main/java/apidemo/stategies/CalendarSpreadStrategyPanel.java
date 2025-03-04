@@ -135,7 +135,8 @@ public class CalendarSpreadStrategyPanel extends JPanel {
         JCalendar calendar = dateChooser.getJCalendar();
         calendar.setPreferredSize(new Dimension(300, 300));
         calendar.setMinSelectableDate(new Date()); // Prevent past dates
-        calendar.setMaxSelectableDate(new Date(System.currentTimeMillis() + 365L * 24 * 60 * 60 * 1000)); // Limit to 1 year
+        calendar.setMaxSelectableDate(new Date(System.currentTimeMillis() + 365L * 24 * 60 * 60 * 1000)); // Limit to 1
+                                                                                                          // year
 
         // Fix narrow month picker
         JMonthChooser monthChooser = calendar.getMonthChooser();

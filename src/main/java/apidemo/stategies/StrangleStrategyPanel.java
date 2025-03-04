@@ -5,6 +5,10 @@ import apidemo.util.UpperField;
 import apidemo.util.VerticalPanel;
 import com.ib.client.*;
 import com.ib.controller.ApiController;
+import com.toedter.calendar.JCalendar;
+import com.toedter.calendar.JDateChooser;
+import com.toedter.calendar.JMonthChooser;
+import com.toedter.calendar.JTextFieldDateEditor;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,7 +19,7 @@ import java.util.Date;
 
 public class StrangleStrategyPanel extends JPanel {
     private final TradingStrategies m_parent;
-    private final UpperField m_expiryDate = new UpperField();
+    private JDateChooser m_expiryDate;
     private final UpperField m_spotPrice = new UpperField();
     private final UpperField m_callStrikeDistance = new UpperField();
     private final UpperField m_putStrikeDistance = new UpperField();
@@ -38,6 +42,9 @@ public class StrangleStrategyPanel extends JPanel {
     public StrangleStrategyPanel(TradingStrategies parent) {
         m_parent = parent;
         setLayout(new BorderLayout());
+
+        // Initialize date chooser with proper configuration
+        m_expiryDate = createDateChooser();
 
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
@@ -98,6 +105,36 @@ public class StrangleStrategyPanel extends JPanel {
         return butPanel;
     }
 
+    private JDateChooser createDateChooser() {
+        JDateChooser dateChooser = new JDateChooser();
+        dateChooser.setPreferredSize(new Dimension(150, 25));
+        dateChooser.setDateFormatString("yyyy-MM-dd");
+        dateChooser.setCalendar(Calendar.getInstance());
+
+        // Configure the text field editor
+        JTextFieldDateEditor editor = (JTextFieldDateEditor) dateChooser.getDateEditor();
+        editor.setBackground(Color.WHITE);
+
+        // Configure the calendar popup
+        JCalendar calendar = dateChooser.getJCalendar();
+        calendar.setPreferredSize(new Dimension(300, 300));
+        calendar.setMinSelectableDate(new Date()); // Prevent past dates
+        calendar.setMaxSelectableDate(new Date(System.currentTimeMillis() + 365L * 24 * 60 * 60 * 1000)); // Limit to 1
+                                                                                                          // year
+
+        // Fix narrow month picker
+        JMonthChooser monthChooser = calendar.getMonthChooser();
+        monthChooser.setPreferredSize(new Dimension(100, 25)); // Increase width
+        monthChooser.getComboBox().setPreferredSize(new Dimension(100, 25)); // Ensure combo box is wider
+
+        // Set calendar properties
+        calendar.setWeekOfYearVisible(false);
+        calendar.setDecorationBackgroundColor(Color.WHITE);
+        calendar.setDecorationBordersVisible(true);
+
+        return dateChooser;
+    }
+
     private void populateDefaults(double spotPrice) {
         SwingUtilities.invokeLater(() -> {
             m_spotPrice.setText("" + CalendarSpreadStrategyPanel.customRound(spotPrice));
@@ -113,9 +150,7 @@ public class StrangleStrategyPanel extends JPanel {
         Calendar calendar = Calendar.getInstance();
         calendar.set(todayDate.getYear(), todayDate.getMonthValue() - 1, todayDate.getDayOfMonth());
         calendar.add(Calendar.DAY_OF_MONTH, 7);
-
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-        m_expiryDate.setText(sdf.format(calendar.getTime()));
+        m_expiryDate.setDate(calendar.getTime());
     }
 
     private void createAndPopulateContracts() {
@@ -127,7 +162,8 @@ public class StrangleStrategyPanel extends JPanel {
 
     private void createContracts() {
         double spotPrice = m_spotPrice.getDouble();
-        String expiryDate = m_expiryDate.getText();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+        String expiryDate = sdf.format(m_expiryDate.getDate());
 
         double callStrike = spotPrice + Double.parseDouble(m_callStrikeDistance.getText());
         double putStrike = spotPrice - Double.parseDouble(m_putStrikeDistance.getText());
