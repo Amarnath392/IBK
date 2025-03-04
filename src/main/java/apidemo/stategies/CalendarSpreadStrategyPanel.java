@@ -5,6 +5,10 @@ import apidemo.util.UpperField;
 import apidemo.util.VerticalPanel;
 import com.ib.client.*;
 import com.ib.controller.ApiController;
+import com.toedter.calendar.JCalendar;
+import com.toedter.calendar.JDateChooser;
+import com.toedter.calendar.JMonthChooser;
+import com.toedter.calendar.JTextFieldDateEditor;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,8 +23,8 @@ import java.util.Date;
 
 public class CalendarSpreadStrategyPanel extends JPanel {
     private final TradingStrategies m_parent;
-    private UpperField m_currentExpiryDate = new UpperField();
-    private UpperField m_nextExpiryDate = new UpperField();
+    private JDateChooser m_currentExpiryDate;
+    private JDateChooser m_nextExpiryDate;
     private final UpperField m_spotPrice = new UpperField();
     private UpperField m_sellLegLengthFromSpotPrice = new UpperField();
     private JCheckBox m_useSellStikesForBuying = new JCheckBox();
@@ -61,6 +65,10 @@ public class CalendarSpreadStrategyPanel extends JPanel {
     public CalendarSpreadStrategyPanel(TradingStrategies parent) {
         m_parent = parent;
         setLayout(new BorderLayout());
+
+        // Initialize date choosers with proper configuration
+        m_currentExpiryDate = createDateChooser();
+        m_nextExpiryDate = createDateChooser();
 
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
@@ -111,6 +119,35 @@ public class CalendarSpreadStrategyPanel extends JPanel {
                 });
             }
         });
+    }
+
+    private JDateChooser createDateChooser() {
+        JDateChooser dateChooser = new JDateChooser();
+        dateChooser.setPreferredSize(new Dimension(150, 25));
+        dateChooser.setDateFormatString("yyyy-MM-dd");
+        dateChooser.setCalendar(Calendar.getInstance());
+
+        // Configure the text field editor
+        JTextFieldDateEditor editor = (JTextFieldDateEditor) dateChooser.getDateEditor();
+        editor.setBackground(Color.WHITE);
+
+        // Configure the calendar popup
+        JCalendar calendar = dateChooser.getJCalendar();
+        calendar.setPreferredSize(new Dimension(300, 300));
+        calendar.setMinSelectableDate(new Date()); // Prevent past dates
+        calendar.setMaxSelectableDate(new Date(System.currentTimeMillis() + 365L * 24 * 60 * 60 * 1000)); // Limit to 1 year
+
+        // Fix narrow month picker
+        JMonthChooser monthChooser = calendar.getMonthChooser();
+        monthChooser.setPreferredSize(new Dimension(100, 25)); // Increase width
+        monthChooser.getComboBox().setPreferredSize(new Dimension(100, 25)); // Ensure combo box is wider
+
+        // Set calendar properties
+        calendar.setWeekOfYearVisible(false);
+        calendar.setDecorationBackgroundColor(Color.WHITE);
+        calendar.setDecorationBordersVisible(true);
+
+        return dateChooser;
     }
 
     private VerticalPanel getInputPanel() {
@@ -176,17 +213,12 @@ public class CalendarSpreadStrategyPanel extends JPanel {
         calendar.set(todayDate.getYear(), todayDate.getMonthValue() - 1, todayDate.getDayOfMonth());
         Date today = calendar.getTime();
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-
         calendar.add(Calendar.DAY_OF_MONTH, 7);
-        String dateAfter7Days = sdf.format(calendar.getTime());
+        m_currentExpiryDate.setDate(calendar.getTime());
 
         calendar.setTime(today);
         calendar.add(Calendar.DAY_OF_MONTH, 14);
-        String dateAfter14Days = sdf.format(calendar.getTime());
-
-        m_currentExpiryDate.setText(dateAfter7Days);
-        m_nextExpiryDate.setText(dateAfter14Days);
+        m_nextExpiryDate.setDate(calendar.getTime());
     }
 
     protected void populateContractDetails(Contract contract, final ContractType type) {
@@ -261,8 +293,9 @@ public class CalendarSpreadStrategyPanel extends JPanel {
 
     private void createContracts() {
         double spotPrice = m_spotPrice.getDouble();
-        String dateAfter7Days = m_currentExpiryDate.getText();
-        String dateAfter14Days = m_nextExpiryDate.getText();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+        String dateAfter7Days = sdf.format(m_currentExpiryDate.getDate());
+        String dateAfter14Days = sdf.format(m_nextExpiryDate.getDate());
 
         double sellDelta = getPositiveOrZero(m_sellLegLengthFromSpotPrice.getDouble());
         m_callSellContract = createOptionContract("C", spotPrice + sellDelta, dateAfter7Days);
