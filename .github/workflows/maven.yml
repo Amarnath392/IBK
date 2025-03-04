@@ -1,0 +1,37 @@
+name: Build JAR and Create EXE
+
+on:
+  push:
+    branches:
+      - main  # Change to your branch
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'  # Change to your required version
+
+      - name: Build JAR using Maven
+        run: mvn clean package
+
+      - name: Install Launch4j
+        run: |
+          choco install launch4j
+
+      - name: Convert JAR to EXE
+        run: |
+          launch4j -v path/to/launch4j-config.xml
+
+      - name: Upload EXE as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: path/to/output.exe
