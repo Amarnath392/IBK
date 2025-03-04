@@ -3,7 +3,7 @@ name: Build JAR and Create EXE
 on:
   push:
     branches:
-      - main  # Change to your branch
+      - master  # Change to your branch
 
 jobs:
   build:
@@ -17,7 +17,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'  # Change to your required version
+          java-version: '21'  # Change to your required version
 
       - name: Build JAR using Maven
         run: mvn clean package
