@@ -32,7 +32,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>apidemo.stategies.CalendarSpreadStrategy</mainClass>
+                            <mainClass>apidemo.stategies.TradingStrategies</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
