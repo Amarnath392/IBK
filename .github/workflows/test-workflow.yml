@@ -18,8 +18,8 @@ jobs:
       - name: Create my_runtime directory
         run: |
           mkdir my_runtime
-          xcopy "$JAVA_HOME" "my_runtime" /E /I /Y
-        shell: cmd
+          Copy-Item -Path "$env:JAVA_HOME" -Destination "my_runtime" -Recurse -Force
+        shell: pwsh
 
       - name: Install Launch4j
         run: choco install launch4j -y
