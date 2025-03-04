@@ -23,13 +23,16 @@ import java.util.Date;
 
 public class CalendarSpreadStrategyPanel extends JPanel {
     private final TradingStrategies m_parent;
-    private JDateChooser m_currentExpiryDate;
-    private JDateChooser m_nextExpiryDate;
+    private final JDateChooser m_currentExpiryDate;
+    private final JDateChooser m_nextExpiryDate;
     private final UpperField m_spotPrice = new UpperField();
-    private UpperField m_sellLegLengthFromSpotPrice = new UpperField();
-    private UpperField m_quantity = new UpperField();
-    private JCheckBox m_useSellStikesForBuying = new JCheckBox();
-    private UpperField m_buyLegLengthFromSellPrice = new UpperField();
+    private final UpperField m_callSellLengthFromSpot = new UpperField();
+    private final UpperField m_putSellLengthFromSpot = new UpperField();
+    private final UpperField m_callBuyLengthFromSell = new UpperField();
+    private final UpperField m_putBuyLengthFromSell = new UpperField();
+    private final UpperField m_quantity = new UpperField();
+    private final JCheckBox m_useCallSellStrikeForBuying = new JCheckBox();
+    private final JCheckBox m_usePutSellStrikeForBuying = new JCheckBox();
     private final JLabel m_status = new JLabel();
     HtmlButton placeOrder;
     private int numberOfContractsLoaded = 0;
@@ -86,10 +89,12 @@ public class CalendarSpreadStrategyPanel extends JPanel {
         mainPanel.add(m_status);
 
         add(mainPanel, BorderLayout.CENTER);
-        m_useSellStikesForBuying.addActionListener(new Action() {
+
+        // Add action listeners for both checkboxes
+        m_useCallSellStrikeForBuying.addActionListener(new Action() {
             @Override
             public Object getValue(String key) {
-                return m_useSellStikesForBuying.isSelected();
+                return m_useCallSellStrikeForBuying.isSelected();
             }
 
             @Override
@@ -116,7 +121,42 @@ public class CalendarSpreadStrategyPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 SwingUtilities.invokeLater(() -> {
-                    m_buyLegLengthFromSellPrice.setVisible(!m_useSellStikesForBuying.isSelected());
+                    m_callBuyLengthFromSell.setVisible(!m_useCallSellStrikeForBuying.isSelected());
+                });
+            }
+        });
+
+        m_usePutSellStrikeForBuying.addActionListener(new Action() {
+            @Override
+            public Object getValue(String key) {
+                return m_usePutSellStrikeForBuying.isSelected();
+            }
+
+            @Override
+            public void putValue(String key, Object value) {
+            }
+
+            @Override
+            public void setEnabled(boolean b) {
+            }
+
+            @Override
+            public boolean isEnabled() {
+                return false;
+            }
+
+            @Override
+            public void addPropertyChangeListener(PropertyChangeListener listener) {
+            }
+
+            @Override
+            public void removePropertyChangeListener(PropertyChangeListener listener) {
+            }
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                SwingUtilities.invokeLater(() -> {
+                    m_putBuyLengthFromSell.setVisible(!m_usePutSellStrikeForBuying.isSelected());
                 });
             }
         });
@@ -157,9 +197,15 @@ public class CalendarSpreadStrategyPanel extends JPanel {
         p.add("Current expiry", m_currentExpiryDate);
         p.add("Next expiry", m_nextExpiryDate);
         p.add("Spot price", m_spotPrice);
-        p.add("Sell legs length from spot", m_sellLegLengthFromSpotPrice);
-        p.add("Use Sell strikes for buying", m_useSellStikesForBuying);
-        p.add("Buy legs length from sell", m_buyLegLengthFromSellPrice);
+
+        p.add("Call Sell length from spot", m_callSellLengthFromSpot);
+        p.add("Use Call Sell strike for buying", m_useCallSellStrikeForBuying);
+        p.add("Call Buy length from sell", m_callBuyLengthFromSell);
+
+        p.add("Put Sell length from spot", m_putSellLengthFromSpot);
+        p.add("Use Put Sell strike for buying", m_usePutSellStrikeForBuying);
+        p.add("Put Buy length from sell", m_putBuyLengthFromSell);
+
         p.add("Quantity", m_quantity);
         return p;
     }
@@ -202,10 +248,14 @@ public class CalendarSpreadStrategyPanel extends JPanel {
         SwingUtilities.invokeLater(() -> {
             m_spotPrice.setText("" + customRound(spotPrice));
             populateDates();
-            m_sellLegLengthFromSpotPrice.setText(5);
-            m_useSellStikesForBuying.setSelected(false);
-            m_buyLegLengthFromSellPrice.setVisible(true);
-            m_buyLegLengthFromSellPrice.setText(3);
+            m_callSellLengthFromSpot.setText(5);
+            m_putSellLengthFromSpot.setText(5);
+            m_useCallSellStrikeForBuying.setSelected(false);
+            m_usePutSellStrikeForBuying.setSelected(false);
+            m_callBuyLengthFromSell.setVisible(true);
+            m_putBuyLengthFromSell.setVisible(true);
+            m_callBuyLengthFromSell.setText(3);
+            m_putBuyLengthFromSell.setText(3);
             m_quantity.setText("1");
             m_status.setText("Default values loaded successfully.");
         });
@@ -301,14 +351,19 @@ public class CalendarSpreadStrategyPanel extends JPanel {
         String dateAfter7Days = sdf.format(m_currentExpiryDate.getDate());
         String dateAfter14Days = sdf.format(m_nextExpiryDate.getDate());
 
-        double sellDelta = getPositiveOrZero(m_sellLegLengthFromSpotPrice.getDouble());
-        m_callSellContract = createOptionContract("C", spotPrice + sellDelta, dateAfter7Days);
-        m_putSellContract = createOptionContract("P", spotPrice - sellDelta, dateAfter7Days);
+        double callSellDelta = getPositiveOrZero(m_callSellLengthFromSpot.getDouble());
+        double putSellDelta = getPositiveOrZero(m_putSellLengthFromSpot.getDouble());
+        m_callSellContract = createOptionContract("C", spotPrice + callSellDelta, dateAfter7Days);
+        m_putSellContract = createOptionContract("P", spotPrice - putSellDelta, dateAfter7Days);
 
-        double callDelta = m_useSellStikesForBuying.isSelected() ? sellDelta
-                : sellDelta + getPositiveOrZero(m_buyLegLengthFromSellPrice.getDouble());
-        m_callBuyContract = createOptionContract("C", spotPrice + callDelta, dateAfter14Days);
-        m_putBuyContract = createOptionContract("P", spotPrice - callDelta, dateAfter14Days);
+        double callBuyDelta = m_useCallSellStrikeForBuying.isSelected() ? callSellDelta
+                : callSellDelta +  getPositiveOrZero(m_callBuyLengthFromSell.getDouble());
+
+        double putBuyDelta = m_usePutSellStrikeForBuying.isSelected() ? putSellDelta
+                :putSellDelta + getPositiveOrZero(m_putBuyLengthFromSell.getDouble());
+
+        m_callBuyContract = createOptionContract("C", spotPrice + callBuyDelta, dateAfter14Days);
+        m_putBuyContract = createOptionContract("P", spotPrice - putBuyDelta, dateAfter14Days);
     }
 
     private Contract createOptionContract(String right, double strike, String date) {
