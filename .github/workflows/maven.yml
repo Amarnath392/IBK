@@ -3,7 +3,7 @@ name: Build JAR and Create EXE
 on:
   push:
     branches:
-      - main  # Change to your branch
+      - master
 
 jobs:
   build:
@@ -17,23 +17,29 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '21'  # Change to your required version
+          java-version: '21'
 
       - name: Build JAR using Maven
         run: mvn clean package
 
-      - name: Install Launch4j in a known location
-        run: choco install launch4j --force -y --install-directory "C:\Launch4j"
+      - name: Install Launch4j
+        run: choco install launch4j -y
 
       - name: Verify Launch4j Installation
-        run: Get-ChildItem -Path "C:\Launch4j" -Recurse -Filter "launch4j.exe"
+        run: |
+          if (Test-Path "C:\Program Files (x86)\Launch4j") {
+            Write-Host "✅ Launch4j is installed at C:\Program Files (x86)\Launch4j"
+          } else {
+            Write-Host "❌ Launch4j installation not found!"
+            exit 1
+          }
 
       - name: Convert JAR to EXE
         run: |
-          "C:\Launch4j\launch4j.exe" -v launch4j-config.xml
+          "C:\Program Files (x86)\Launch4j\launch4j.exe" -v "${{ github.workspace }}/config/launch4j.xml"
 
       - name: Upload EXE as an artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-exe
-          path: target/TBI.exe
+          path: target/your-app.exe

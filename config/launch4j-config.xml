@@ -3,7 +3,7 @@
     <headerType>gui</headerType>
     <jar>target/TBI-1.0-SNAPSHOT.jar</jar>
     <outfile>target/TBI.exe</outfile>
-    <icon>src/main/resources/TBI.icns</icon>
+    <icon>src/main/resources/TBI.ico</icon>
     <jre>
         <minVersion>21</minVersion>
     </jre>
