@@ -21,17 +21,6 @@ jobs:
       - name: Build project with Maven
         run: mvn package
 
-      - name: Create custom runtime image
-        shell: cmd
-        run: |
-          jlink ^
-            --output runtime ^
-            --add-modules java.base,java.desktop ^
-            --strip-debug ^
-            --compress 2 ^
-            --no-header-files ^
-            --no-man-pages
-
       - name: Package with jpackage
         shell: cmd
         run: |
