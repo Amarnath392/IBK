@@ -1,0 +1,44 @@
+name: Build Windows MSI
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build-msi:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Build project with Maven
+        run: mvn package
+
+      - name: Package with jpackage
+        shell: cmd
+        run: |
+          mkdir output
+          jpackage ^
+            --type msi ^
+            --input target ^
+            --name TBI ^
+            --main-jar TBI-1.0-SNAPSHOT.jar ^
+            --main-class apidemo.stategies.TradingStrategies ^
+            --win-dir-chooser ^
+            --win-shortcut ^
+            --win-menu ^
+            --dest output ^
+            --app-version 1.0
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TBIInstaller
+          path: output/*.msi
