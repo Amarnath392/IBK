@@ -1,0 +1,48 @@
+name: Manual Build - Windows .exe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows .exe
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Build JAR with Maven
+      run: mvn clean package -DskipTests
+
+    - name: Build Windows executable with jpackage
+      run: |
+        jpackage `
+          --type app-image `
+          --input target `
+          --name "IBKR-Trading-Strategies" `
+          --main-jar ibkr-trading-strategies.jar `
+          --main-class apidemo.stategies.TradingStrategies `
+          --dest build `
+          --java-options "-Xmx1024m" `
+          --app-version "1.0" `
+          --vendor "IBKR Trader" `
+          --description "Interactive Brokers Trading Strategies Platform"
+
+    - name: Create distributable ZIP
+      run: |
+        Compress-Archive -Path build\IBKR-Trading-Strategies -DestinationPath IBKR-Trading-Strategies-Windows.zip
+
+    - name: Upload Windows executable
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-executable
+        path: IBKR-Trading-Strategies-Windows.zip
+        retention-days: 30
