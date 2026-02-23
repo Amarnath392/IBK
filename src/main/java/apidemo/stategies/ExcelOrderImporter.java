@@ -1,6 +1,7 @@
 package apidemo.stategies;
 
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.util.StringUtil;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 
@@ -9,6 +10,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ExcelOrderImporter {
     
@@ -22,7 +24,7 @@ public class ExcelOrderImporter {
             this.trades = trades;
             this.errors = errors;
             this.warnings = warnings;
-            this.success = !trades.isEmpty();
+            this.success = !trades.isEmpty() && errors.isEmpty();
         }
     }
     
@@ -45,7 +47,7 @@ public class ExcelOrderImporter {
         }
     }
     
-    public static ImportResult importFromExcel(File file) {
+    public static ImportResult importFromExcel(File file, List<String> availableAccounts) {
         List<TradeOrder> trades = new ArrayList<>();
         List<String> errors = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
@@ -72,7 +74,7 @@ public class ExcelOrderImporter {
         } catch (IOException e) {
             errors.add("Error reading Excel file: " + e.getMessage());
         }
-        
+        validateAccounts(trades, availableAccounts, errors);
         return new ImportResult(trades, errors, warnings);
     }
     
@@ -375,5 +377,51 @@ public class ExcelOrderImporter {
             }
         }
         return "";
+    }
+    
+    private static void validateAccounts(List<TradeOrder> trades, List<String> availableAccounts, List<String> errors) {
+        if (availableAccounts == null || availableAccounts.isEmpty()) {
+            errors.add("No accounts available from IB. Please ensure you are connected to IB TWS/Gateway.");
+            return;
+        }
+        
+        Set<String> missingAccounts = new HashSet<>();
+        Set<String> invalidAccounts = new HashSet<>();
+        
+        for (TradeOrder trade : trades) {
+            String account = trade.getAccount();
+            if (StringUtil.isNotBlank(account)) {
+                missingAccounts.add("Trade ID: " + trade.getTradeId());
+                continue;
+            }
+
+            account = account.strip();
+            if (!availableAccounts.contains(account)) {
+                invalidAccounts.add(account);
+            }
+        }
+        
+        if (missingAccounts.isEmpty() && invalidAccounts.isEmpty()) {
+            return;
+        }
+        
+        StringBuilder errorMsg = new StringBuilder("Account Validation Failed!\n\n");
+        if (!missingAccounts.isEmpty()) {
+            errorMsg.append("Missing account(s) in Excel file:\n")
+                    .append(missingAccounts.stream()
+                            .map(row -> "• " + row)
+                            .collect(Collectors.joining("\n")))
+                    .append("\n");
+        }
+        
+        if (!invalidAccounts.isEmpty()) {
+            errorMsg.append("Invalid account(s) not found in IB:\n")
+                    .append(invalidAccounts.stream()
+                            .map(row -> "• " + row)
+                            .collect(Collectors.joining("\n")))
+                    .append("\n");
+        }
+
+        errors.add(errorMsg.toString());
     }
 }

@@ -117,6 +117,15 @@ public class TradingStrategies implements IConnectionHandler {
     }
 
     /**
+     * Gets the list of all available accounts.
+     * 
+     * @return list of account identifiers
+     */
+    public List<String> getAccountList() {
+        return new ArrayList<>(m_acctList);
+    }
+
+    /**
      * Sets the selected account.
      * 
      * @param account the account identifier to select

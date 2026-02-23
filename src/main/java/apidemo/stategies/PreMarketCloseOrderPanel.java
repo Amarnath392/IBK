@@ -19,10 +19,14 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class PreMarketCloseOrderPanel extends JPanel implements PriceMonitor.PriceAlertListener {
     
@@ -418,7 +422,8 @@ public class PreMarketCloseOrderPanel extends JPanel implements PriceMonitor.Pri
         new SwingWorker<ExcelOrderImporter.ImportResult, Void>() {
             @Override
             protected ExcelOrderImporter.ImportResult doInBackground() {
-                return ExcelOrderImporter.importFromExcel(selectedFile);
+                List<String> availableAccounts = m_parent.getAccountList();
+                return ExcelOrderImporter.importFromExcel(selectedFile, availableAccounts);
             }
             
             @Override
@@ -427,12 +432,18 @@ public class PreMarketCloseOrderPanel extends JPanel implements PriceMonitor.Pri
                     ExcelOrderImporter.ImportResult importResult = get();
                     
                     if (!importResult.errors.isEmpty()) {
-                        StringBuilder errorMsg = new StringBuilder("Import completed with errors:\n\n");
-                        for (String error : importResult.errors) {
-                            errorMsg.append("• ").append(error).append("\n");
-                        }
-                        JOptionPane.showMessageDialog(PreMarketCloseOrderPanel.this,
-                            errorMsg.toString(), "Import Errors", JOptionPane.WARNING_MESSAGE);
+                        String errorMsg = "Import Failed:\n\n" + importResult.errors.stream()
+                                .map(error -> "• " + error)
+                                .collect(Collectors.joining("\n"));
+                        JOptionPane.showMessageDialog(
+                                PreMarketCloseOrderPanel.this,
+                                errorMsg,
+                                "Import Errors",
+                                JOptionPane.ERROR_MESSAGE
+                        );
+                        statusLabel.setText("Import failed - check error message");
+                        statusLabel.setForeground(Color.RED);
+                        return;
                     }
                     
                     if (!importResult.warnings.isEmpty()) {
