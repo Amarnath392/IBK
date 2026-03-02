@@ -409,6 +409,7 @@ public class CalendarSpreadStrategyPanel extends JPanel {
         comboOrder.action("BUY");
         comboOrder.totalQuantity(Decimal.get(m_quantity.getInt()));
         comboOrder.tif("GTC");
+        m_parent.applyAccountToOrder(comboOrder);
 
         m_parent.controller().placeOrModifyOrder(comboContract, comboOrder,
                 new ApiController.IOrderHandler() {

@@ -107,6 +107,36 @@ public class TradingStrategies implements IConnectionHandler {
     }
 
     /**
+     * Gets the currently selected account from the connection panel dropdown.
+     * 
+     * @return the selected account identifier, or null if none selected
+     */
+    public String getSelectedAccount() {
+        return m_connectionPanel.m_accountCombo.getSelectedItem();
+    }
+
+    /**
+     * Gets the list of all available accounts.
+     * 
+     * @return list of account identifiers
+     */
+    public List<String> getAccountList() {
+        return new ArrayList<>(m_acctList);
+    }
+
+    /**
+     * Applies the selected account to an order, if one is selected.
+     * 
+     * @param order the order to apply the account to
+     */
+    public void applyAccountToOrder(com.ib.client.Order order) {
+        String account = getSelectedAccount();
+        if (account != null && !account.isEmpty()) {
+            order.account(account);
+        }
+    }
+
+    /**
      * Initializes and displays the main application window.
      * Sets up the tabbed interface with strategy panels and log views.
      * Automatically attempts to connect to IB TWS/Gateway on localhost:7497.
@@ -184,6 +214,9 @@ public class TradingStrategies implements IConnectionHandler {
         show("Received account list");
         m_acctList.clear();
         m_acctList.addAll(list);
+        
+        // Update the connection panel dropdown with the account list
+        m_connectionPanel.updateAccountList(list);
     }
 
     /**
@@ -246,6 +279,8 @@ public class TradingStrategies implements IConnectionHandler {
                         + "Simulated Trading ports for new installations of "
                         + "version 954.1 or newer: "
                         + "<b>TWS: 7497; IB Gateway: 4002</b></html>");
+        private final TCombo<String> m_accountCombo = new TCombo<>();
+        private final JLabel m_accountLabel = new JLabel("No accounts loaded");
 
         ConnectionPanel() {
             HtmlButton connect = new HtmlButton("Connect") {
@@ -261,6 +296,14 @@ public class TradingStrategies implements IConnectionHandler {
                     controller().disconnect();
                 }
             };
+
+            // Log account selection changes
+            m_accountCombo.addActionListener(e -> {
+                String selected = m_accountCombo.getSelectedItem();
+                if (selected != null) {
+                    TradingStrategies.this.show("Selected account: " + selected);
+                }
+            });
 
             JPanel p1 = new VerticalPanel();
             p1.add("Host", m_host);
@@ -279,6 +322,8 @@ public class TradingStrategies implements IConnectionHandler {
             JPanel p3 = new VerticalPanel();
             p3.setBorder(new EmptyBorder(20, 0, 0, 0));
             p3.add("Connection status: ", m_status);
+            p3.add("Account: ", m_accountCombo);
+            p3.add("", m_accountLabel);
 
             JPanel p4 = new JPanel(new BorderLayout());
             p4.add(p1, BorderLayout.WEST);
@@ -297,6 +342,27 @@ public class TradingStrategies implements IConnectionHandler {
             int port = Integer.parseInt(m_port.getText());
             int clientId = Integer.parseInt(m_clientId.getText());
             controller().connect(m_host.getText(), port, clientId, m_connectOptionsTF.getText());
+        }
+
+        /**
+         * Updates the account dropdown with the list of accounts received from IB.
+         * 
+         * @param accounts list of account identifiers
+         */
+        void updateAccountList(List<String> accounts) {
+            SwingUtilities.invokeLater(() -> {
+                m_accountCombo.removeAllItems();
+                for (String account : accounts) {
+                    m_accountCombo.addItem(account);
+                }
+                
+                if (!accounts.isEmpty()) {
+                    m_accountCombo.setSelectedIndex(0);
+                    m_accountLabel.setText(accounts.size() + " account(s) available");
+                } else {
+                    m_accountLabel.setText("No accounts found");
+                }
+            });
         }
     }
 

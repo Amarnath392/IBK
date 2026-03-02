@@ -328,6 +328,7 @@ public class StrangleStrategyPanel extends JPanel {
         comboOrder.action("SELL");
         comboOrder.totalQuantity(Decimal.get(1));
         comboOrder.tif("GTC");
+        m_parent.applyAccountToOrder(comboOrder);
 
         // Place the combo order
         m_parent.controller().placeOrModifyOrder(comboContract, comboOrder,

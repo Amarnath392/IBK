@@ -1,11 +1,14 @@
 package apidemo.stategies;
 
+import org.apache.poi.util.StringUtil;
+
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.util.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class PreMarketCloseOrderPanel extends JPanel {
     
@@ -134,9 +137,24 @@ public class PreMarketCloseOrderPanel extends JPanel {
     }
     
     private void handleImportResult(ExcelOrderImporter.ImportResult result) {
+        // Validate accounts across all sheets before processing
+        List<String> errors = new ArrayList<>(result.errors);
+        List<String> availableAccounts = m_parent.getAccountList();
+        List<TradeOrder> allTrades = result.sheetTrades.values().stream()
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+        validateAccounts(allTrades, availableAccounts, errors);
+        
         // Show errors if any
-        if (!result.errors.isEmpty()) {
-            showMessageList("Import Errors", result.errors, JOptionPane.WARNING_MESSAGE);
+        if (!errors.isEmpty()) {
+            showMessageList("Import Errors", errors, JOptionPane.WARNING_MESSAGE);
+        }
+        
+        // Stop import if account validation failed
+        if (errors.size() > result.errors.size()) {
+            statusLabel.setText("Import failed - account validation errors");
+            statusLabel.setForeground(Color.RED);
+            return;
         }
         
         if (!result.success) {
@@ -223,5 +241,51 @@ public class PreMarketCloseOrderPanel extends JPanel {
         JScrollPane scroll = new JScrollPane(textArea);
         scroll.setPreferredSize(new Dimension(500, Math.min(300, messages.size() * 20 + 60)));
         JOptionPane.showMessageDialog(this, scroll, title, messageType);
+    }
+    
+    private void validateAccounts(List<TradeOrder> trades, List<String> availableAccounts, List<String> errors) {
+        if (availableAccounts == null || availableAccounts.isEmpty()) {
+            errors.add("No accounts available from IB. Please ensure you are connected to IB TWS/Gateway.");
+            return;
+        }
+
+        Set<String> missingAccounts = new HashSet<>();
+        Set<String> invalidAccounts = new HashSet<>();
+
+        for (TradeOrder trade : trades) {
+            String account = trade.getAccount();
+            if (StringUtil.isBlank(account)) {
+                missingAccounts.add("Trade ID: " + trade.getTradeId());
+                continue;
+            }
+
+            account = account.strip();
+            if (!availableAccounts.contains(account)) {
+                invalidAccounts.add(account);
+            }
+        }
+
+        if (missingAccounts.isEmpty() && invalidAccounts.isEmpty()) {
+            return;
+        }
+
+        StringBuilder errorMsg = new StringBuilder("Account Validation Failed!\n\n");
+        if (!missingAccounts.isEmpty()) {
+            errorMsg.append("Missing account(s) in Excel file:\n")
+                    .append(missingAccounts.stream()
+                            .map(row -> "• " + row)
+                            .collect(Collectors.joining("\n")))
+                    .append("\n");
+        }
+
+        if (!invalidAccounts.isEmpty()) {
+            errorMsg.append("Invalid account(s) not found in IB:\n")
+                    .append(invalidAccounts.stream()
+                            .map(row -> "• " + row)
+                            .collect(Collectors.joining("\n")))
+                    .append("\n");
+        }
+
+        errors.add(errorMsg.toString());
     }
 }
