@@ -130,16 +130,28 @@ public class TradeOrder {
         if (!isComboOrder()) {
             return "SELL".equalsIgnoreCase(legs.get(0).action);
         }
-        // Credit = net premium received (more sells than buys by value)
-        double netCashFlow = 0;
+        
+        // All SELL → always credit; all BUY → always debit
+        boolean allSell = legs.stream().allMatch(l -> "SELL".equalsIgnoreCase(l.action));
+        boolean allBuy  = legs.stream().allMatch(l -> "BUY".equalsIgnoreCase(l.action));
+        if (allSell) return true;
+        if (allBuy)  return false;
+        
+        // Mixed directions: use strike-based heuristic per option type
+        // PUT: higher strike = more expensive premium
+        // CALL: lower strike = more expensive premium (negate strike)
+        // SELL expensive + BUY cheap = net credit
+        double creditScore = 0;
         for (OrderLeg leg : legs) {
+            boolean isPut = "P".equalsIgnoreCase(leg.optionType) || "PUT".equalsIgnoreCase(leg.optionType);
+            double premiumProxy = isPut ? leg.strike : -leg.strike;
             if ("SELL".equalsIgnoreCase(leg.action)) {
-                netCashFlow += leg.rate; // premium received
+                creditScore += premiumProxy * leg.rate;
             } else {
-                netCashFlow -= leg.rate; // premium paid
+                creditScore -= premiumProxy * leg.rate;
             }
         }
-        return netCashFlow > 0;
+        return creditScore > 0;
     }
     
     public int getTotalQuantity() {

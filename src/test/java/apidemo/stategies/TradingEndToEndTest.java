@@ -237,30 +237,32 @@ public class TradingEndToEndTest {
 
     @Test
     @Order(13)
-    @DisplayName("2.4 Mixed legs: BUY 2 + SELL 1 → debit")
+    @DisplayName("2.4 Mixed legs: BUY higher PUT + SELL lower PUT → debit (bear put spread)")
     void testMixedLegsDebit() {
         TradeOrder t = new TradeOrder("100", "DU4932144");
         t.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "BUY", "P", "MAIN",
-                640, 2, 1, "DU4932144", 1));
+                640, 1, 1, "DU4932144", 1));
         t.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "P", "",
                 630, 1, 1, "DU4932144", 2));
 
-        // netCashFlow = -2 (BUY rate 2) + 1 (SELL rate 1) = -1 → debit
+        // BUY higher PUT (expensive) + SELL lower PUT (cheap) → debit
+        // creditScore = -(640*1) + (630*1) = -10 → debit
         assertFalse(t.isCreditTrade());
         assertEquals("BUY", t.getDisplayAction());
     }
 
     @Test
     @Order(14)
-    @DisplayName("2.5 Mixed legs: SELL 2 + BUY 1 → credit")
+    @DisplayName("2.5 Mixed legs: SELL higher PUT + BUY lower PUT → credit (bull put spread)")
     void testMixedLegsCredit() {
         TradeOrder t = new TradeOrder("101", "DU4932144");
         t.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "P", "MAIN",
-                640, 2, 1, "DU4932144", 1));
+                640, 1, 1, "DU4932144", 1));
         t.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "BUY", "P", "",
                 630, 1, 1, "DU4932144", 2));
 
-        // netCashFlow = +2 (SELL rate 2) - 1 (BUY rate 1) = +1 → credit
+        // SELL higher PUT (expensive) + BUY lower PUT (cheap) → credit
+        // creditScore = +(640*1) - (630*1) = +10 → credit
         assertTrue(t.isCreditTrade());
         assertEquals("SELL", t.getDisplayAction());
     }
@@ -280,6 +282,68 @@ public class TradingEndToEndTest {
                 640, 1, 1, "DU4932144", 1));
         assertTrue(sellTrade.isCreditTrade());
         assertFalse(sellTrade.isComboOrder());
+    }
+
+    // --- Excel Trade Type Classification Tests ---
+
+    @Test
+    @Order(16)
+    @DisplayName("2.7 Trade1: PLTR short strangle (SELL PUT + SELL CALL) → credit")
+    void testTrade1ShortStrangle() {
+        TradeOrder t = new TradeOrder("1", "DU4932144");
+        t.addLeg(new TradeOrder.OrderLeg("PLTR", "20260417", "SELL", "P", "MAIN",
+                130, 1, 1, "DU4932144", 1));
+        t.addLeg(new TradeOrder.OrderLeg("PLTR", "20260417", "SELL", "C", "",
+                165, 1, 1, "DU4932144", 2));
+        assertTrue(t.isCreditTrade(), "Short strangle (all SELL) = credit");
+        assertEquals("SELL", t.getDisplayAction());
+    }
+
+    @Test
+    @Order(17)
+    @DisplayName("2.8 Trade2: GOOGL bull put spread (SELL PUT 270 + BUY PUT 260) → credit")
+    void testTrade2BullPutSpread() {
+        TradeOrder t = new TradeOrder("2", "DU4932144");
+        t.addLeg(new TradeOrder.OrderLeg("GOOGL", "20260515", "SELL", "P", "MAIN",
+                270, 1, 1, "DU4932144", 1));
+        t.addLeg(new TradeOrder.OrderLeg("GOOGL", "20260515", "BUY", "P", "",
+                260, 1, 1, "DU4932144", 2));
+        // SELL higher PUT (expensive) + BUY lower PUT (cheap) → credit
+        // creditScore = +(270) - (260) = +10 → credit
+        assertTrue(t.isCreditTrade(), "Bull put spread = credit (SELL expensive, BUY cheap)");
+        assertEquals("SELL", t.getDisplayAction());
+    }
+
+    @Test
+    @Order(18)
+    @DisplayName("2.9 Trade3: AAPL iron condor → credit")
+    void testTrade3IronCondor() {
+        TradeOrder t = new TradeOrder("3", "DU4932144");
+        t.addLeg(new TradeOrder.OrderLeg("AAPL", "20260618", "SELL", "P", "MAIN",
+                230, 1, 1, "DU4932144", 1));
+        t.addLeg(new TradeOrder.OrderLeg("AAPL", "20260618", "BUY", "P", "",
+                220, 1, 1, "DU4932144", 2));
+        t.addLeg(new TradeOrder.OrderLeg("AAPL", "20260618", "SELL", "C", "",
+                260, 1, 1, "DU4932144", 3));
+        t.addLeg(new TradeOrder.OrderLeg("AAPL", "20260618", "BUY", "C", "",
+                270, 1, 1, "DU4932144", 4));
+        // PUT: +(230) - (220) = +10; CALL: +(-260) - (-270) = +10; total = +20 → credit
+        assertTrue(t.isCreditTrade(), "Iron condor = credit");
+        assertEquals("SELL", t.getDisplayAction());
+    }
+
+    @Test
+    @Order(19)
+    @DisplayName("2.10 Trade4: SPY ratio put spread (BUY PUT 635 r=1 + SELL PUT 620 r=2) → credit")
+    void testTrade4RatioPutSpread() {
+        TradeOrder t = new TradeOrder("4", "DU4932144");
+        t.addLeg(new TradeOrder.OrderLeg("SPY", "20260410", "BUY", "P", "MAIN",
+                635, 1, 1, "DU4932144", 1));
+        t.addLeg(new TradeOrder.OrderLeg("SPY", "20260410", "SELL", "P", "",
+                620, 2, 1, "DU4932144", 2));
+        // creditScore = -(635*1) + (620*2) = -635 + 1240 = +605 → credit
+        assertTrue(t.isCreditTrade(), "Ratio put spread with 1:2 = credit");
+        assertEquals("SELL", t.getDisplayAction());
     }
 
     // ========================================================================

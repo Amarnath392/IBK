@@ -142,34 +142,49 @@ public class TradingStrategies implements IConnectionHandler {
      * Automatically attempts to connect to IB TWS/Gateway on localhost:7497.
      */
     private void run() {
-        m_tabbedPanel.addTab("Connection", m_connectionPanel);
-        m_tabbedPanel.addTab("Calendar Spread", m_calendarSpreadPanel);
-        m_tabbedPanel.addTab("Strangle", m_stranglePanel);
-        m_tabbedPanel.addTab("Multi Stock", m_multiStockPanel);
-        m_tabbedPanel.addTab("Pre-Market Close Orders", m_preMarketCloseOrderPanel);
+        // Modern tabbed interface with clear icons/labels
+        m_tabbedPanel.addTab("🔌 Connection", m_connectionPanel);
+        m_tabbedPanel.addTab("📅 Calendar Spread", m_calendarSpreadPanel);
+        m_tabbedPanel.addTab("📊 Strangle", m_stranglePanel);
+        m_tabbedPanel.addTab("📈 Multi Stock", m_multiStockPanel);
+        m_tabbedPanel.addTab("⏰ Pre-Market Close", m_preMarketCloseOrderPanel);
 
+        // Configure log areas with better styling
         m_msg.setEditable(false);
         m_msg.setLineWrap(true);
+        m_msg.setFont(new Font("Consolas", Font.PLAIN, 12));
+        m_inLog.setFont(new Font("Consolas", Font.PLAIN, 11));
+        m_outLog.setFont(new Font("Consolas", Font.PLAIN, 11));
 
         JScrollPane msgScroll = new JScrollPane(m_msg);
-        msgScroll.setPreferredSize(new Dimension(10000, 120));
+        msgScroll.setPreferredSize(new Dimension(10000, 140));
+        msgScroll.setBorder(BorderFactory.createEmptyBorder());
 
         JScrollPane outLogScroll = new JScrollPane(m_outLog);
-        outLogScroll.setPreferredSize(new Dimension(10000, 120));
+        outLogScroll.setPreferredSize(new Dimension(10000, 140));
+        outLogScroll.setBorder(BorderFactory.createEmptyBorder());
 
         JScrollPane inLogScroll = new JScrollPane(m_inLog);
-        inLogScroll.setPreferredSize(new Dimension(10000, 120));
+        inLogScroll.setPreferredSize(new Dimension(10000, 140));
+        inLogScroll.setBorder(BorderFactory.createEmptyBorder());
 
         NewTabbedPanel bot = new NewTabbedPanel();
-        bot.addTab("Messages", msgScroll);
-        bot.addTab("Log (out)", outLogScroll);
-        bot.addTab("Log (in)", inLogScroll);
+        bot.addTab("📢 Messages", msgScroll);
+        bot.addTab("📤 Log (out)", outLogScroll);
+        bot.addTab("📥 Log (in)", inLogScroll);
 
-        m_frame.add(m_tabbedPanel);
+        // Main layout
+        m_frame.setLayout(new BorderLayout(0, 0));
+        m_frame.add(m_tabbedPanel, BorderLayout.CENTER);
         m_frame.add(bot, BorderLayout.SOUTH);
-        m_frame.setSize(1024, 768);
-        m_frame.setVisible(true);
+        
+        // Modern window settings (Chrome-like resolution)
+        m_frame.setTitle("IBK Trading Strategies Platform");
+        m_frame.setSize(1600, 900);
+        m_frame.setMinimumSize(new Dimension(1280, 720));
+        m_frame.setLocationRelativeTo(null);  // Center on screen
         m_frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        m_frame.setVisible(true);
 
         controller().connect("127.0.0.1", 7497, 0,
                 m_connectionConfiguration.getDefaultConnectOptions() != null

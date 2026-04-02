@@ -198,11 +198,11 @@ public class ExcelOrderImporter {
         }
         
         if (row.symbol.isEmpty()) {
-            throw new Exception("Symbol is required");
+            throw new Exception("Symbol is required (e.g., SPY, AAPL)");
         }
         
         if (row.expiry.isEmpty()) {
-            throw new Exception("Expiry is required");
+            throw new Exception("Expiry date is required (format: YYYYMMDD or dd-MMM-yy)");
         }
         
         if (!row.action.equals("BUY") && !row.action.equals("SELL")) {
@@ -220,24 +220,21 @@ public class ExcelOrderImporter {
         // Don't auto-default empty role - leave it empty for non-main legs
         
         if (row.strike <= 0) {
-            throw new Exception("Strike must be positive");
+            throw new Exception("Strike price must be positive (found: " + row.strike + ")");
         }
         
         if (row.rate <= 0) {
-            throw new Exception("Rate must be positive");
+            throw new Exception("Rate (contracts per leg) must be positive (found: " + row.rate + ")");
         }
         
-        // Only validate QTY for MAIN role legs; child legs inherit QTY from main
-        if ("MAIN".equalsIgnoreCase(row.role) && row.quantity <= 0) {
-            throw new Exception("Quantity must be positive for Main role");
-        }
-        
-        // Only validate target/alert for explicitly marked MAIN role
-        if ("MAIN".equalsIgnoreCase(row.role) && !row.role.isEmpty()) {
-            if (row.target == 0) {
-                throw new Exception("Target price must be non-zero for Main role");
+        // P2: Better validation messages
+        if ("MAIN".equalsIgnoreCase(row.role)) {
+            if (row.quantity <= 0) {
+                throw new Exception("Quantity must be positive for MAIN role (found: " + row.quantity + ")");
             }
-            // Alert: positive = trigger above, negative = trigger below, 0 = no alert
+            if (row.target == 0) {
+                throw new Exception("Target Price must be non-zero for MAIN role (set your limit order price)");
+            }
         }
     }
     
@@ -312,17 +309,30 @@ public class ExcelOrderImporter {
         return trade;
     }
     
-    private static ExcelRow findMainRow(List<ExcelRow> rows, String tradeId, List<String> warnings) {
+    private static ExcelRow findMainRow(List<ExcelRow> rows, String tradeId, List<String> warnings) throws Exception {
         // Look for explicit MAIN role
         for (ExcelRow row : rows) {
             if ("MAIN".equalsIgnoreCase(row.role)) {
+                // P2: Validate MAIN leg has non-zero target price
+                if (row.target == 0) {
+                    throw new Exception("MAIN leg must have non-zero Target Price (found 0.0)");
+                }
                 return row;
             }
         }
         
-        // If no MAIN found, use first row and warn
-        warnings.add("Trade " + tradeId + ": No MAIN role found, using first row for target/alert");
-        return rows.get(0);
+        // P2: Enforce MAIN role for multi-leg trades (stricter validation)
+        if (rows.size() > 1) {
+            throw new Exception("Multi-leg combo orders must have one leg with MAIN role. Add MAIN to the primary leg.");
+        }
+        
+        // Single leg trade without explicit MAIN - use first row with validation
+        ExcelRow mainRow = rows.get(0);
+        if (mainRow.target == 0) {
+            throw new Exception("Target Price must be non-zero (found 0.0)");
+        }
+        warnings.add("Trade " + tradeId + ": Single-leg trade, using as MAIN (consider adding MAIN role)");
+        return mainRow;
     }
     
     private static void validateTradeConsistency(TradeOrder trade, List<ExcelRow> rows, List<String> warnings) {
