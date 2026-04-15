@@ -42,22 +42,20 @@ public class TradingEndToEndTest {
 
             // Header row
             Row header = sheet.createRow(0);
-            String[] headers = {"Trade ID", "Account", "Symbol", "Expiry", "Action", "Role",
-                    "Strike", "Rate", "QTY", "Target", "Alert", "Active"};
-            for (int i = 0; i < headers.length; i++) {
-                header.createCell(i).setCellValue(headers[i]);
+            for (int i = 0; i <= ExcelOrderImporter.COL_ACTIVE; i++) {
+                header.createCell(i).setCellValue(ExcelOrderImporter.EXCEL_HEADERS[i]);
             }
 
             // Row 2: PUT BUY (Main leg)
             Row r2 = sheet.createRow(1);
-            r2.createCell(0).setCellValue(1);            // Trade ID
-            r2.createCell(1).setCellValue("DU4932144");  // Account
-            r2.createCell(2).setCellValue("SPY");         // Symbol
+            r2.createCell(ExcelOrderImporter.COL_TRADE_ID).setCellValue(1);
+            r2.createCell(ExcelOrderImporter.COL_ACCOUNT).setCellValue("DU4932144");
+            r2.createCell(ExcelOrderImporter.COL_SYMBOL).setCellValue("SPY");
             // Expiry as date "17-Apr-26"
             CellStyle dateStyle = wb.createCellStyle();
             CreationHelper ch = wb.getCreationHelper();
             dateStyle.setDataFormat(ch.createDataFormat().getFormat("dd-MMM-yy"));
-            Cell dateCell = r2.createCell(3);
+            Cell dateCell = r2.createCell(ExcelOrderImporter.COL_EXPIRY);
             try {
                 SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yy");
                 dateCell.setCellValue(sdf.parse("17-Apr-26"));
@@ -65,21 +63,22 @@ public class TradingEndToEndTest {
                 dateCell.setCellValue("17-Apr-26");
             }
             dateCell.setCellStyle(dateStyle);
-            r2.createCell(4).setCellValue("put buy");     // Action
-            r2.createCell(5).setCellValue("Main");        // Role
-            r2.createCell(6).setCellValue(640);            // Strike
-            r2.createCell(7).setCellValue(1);              // Rate
-            r2.createCell(8).setCellValue(1);              // QTY
-            r2.createCell(9).setCellValue(10);             // Target
-            r2.createCell(10).setCellValue(15);            // Alert
-            r2.createCell(11).setCellValue("Y");           // Active
+            r2.createCell(ExcelOrderImporter.COL_NET_ACTION).setCellValue("BUY");
+            r2.createCell(ExcelOrderImporter.COL_ACTION).setCellValue("put buy");
+            r2.createCell(ExcelOrderImporter.COL_ROLE).setCellValue("Main");
+            r2.createCell(ExcelOrderImporter.COL_STRIKE).setCellValue(640);
+            r2.createCell(ExcelOrderImporter.COL_RATE).setCellValue(1);
+            r2.createCell(ExcelOrderImporter.COL_QTY).setCellValue(1);
+            r2.createCell(ExcelOrderImporter.COL_TARGET).setCellValue(10);
+            r2.createCell(ExcelOrderImporter.COL_ALERT).setCellValue(15);
+            r2.createCell(ExcelOrderImporter.COL_ACTIVE).setCellValue("Y");
 
             // Row 3: CALL BUY (child leg)
             Row r3 = sheet.createRow(2);
-            r3.createCell(0).setCellValue(1);              // Same Trade ID
-            r3.createCell(1).setCellValue("DU4932144");
-            r3.createCell(2).setCellValue("SPY");
-            Cell dateCell2 = r3.createCell(3);
+            r3.createCell(ExcelOrderImporter.COL_TRADE_ID).setCellValue(1);
+            r3.createCell(ExcelOrderImporter.COL_ACCOUNT).setCellValue("DU4932144");
+            r3.createCell(ExcelOrderImporter.COL_SYMBOL).setCellValue("SPY");
+            Cell dateCell2 = r3.createCell(ExcelOrderImporter.COL_EXPIRY);
             try {
                 SimpleDateFormat sdf = new SimpleDateFormat("dd-MMM-yy");
                 dateCell2.setCellValue(sdf.parse("17-Apr-26"));
@@ -87,13 +86,14 @@ public class TradingEndToEndTest {
                 dateCell2.setCellValue("17-Apr-26");
             }
             dateCell2.setCellStyle(dateStyle);
-            r3.createCell(4).setCellValue("call buy");
+            // Net Action left empty (child leg)
+            r3.createCell(ExcelOrderImporter.COL_ACTION).setCellValue("call buy");
             // Role left empty (child leg)
-            r3.createCell(6).setCellValue(670);
-            r3.createCell(7).setCellValue(1);
-            r3.createCell(8).setCellValue(1);
+            r3.createCell(ExcelOrderImporter.COL_STRIKE).setCellValue(670);
+            r3.createCell(ExcelOrderImporter.COL_RATE).setCellValue(1);
+            r3.createCell(ExcelOrderImporter.COL_QTY).setCellValue(1);
             // Target, Alert left empty for child leg
-            r3.createCell(11).setCellValue("Y");
+            r3.createCell(ExcelOrderImporter.COL_ACTIVE).setCellValue("Y");
 
             wb.write(fos);
         }
@@ -224,9 +224,9 @@ public class TradingEndToEndTest {
     void testCreditClassification() {
         // Manually build a credit trade: SELL PUT + SELL CALL (short strangle)
         TradeOrder creditTrade = new TradeOrder("99", "DU4932144");
-        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "P", "MAIN",
+        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "SELL", "P", "MAIN",
                 640, 1, 1, "DU4932144", 1));
-        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "C", "",
+        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "SELL", "C", "",
                 670, 1, 1, "DU4932144", 2));
         creditTrade.setTargetPrice(5.0);
         creditTrade.setAlertThreshold(3.0);
@@ -240,13 +240,12 @@ public class TradingEndToEndTest {
     @DisplayName("2.4 Mixed legs: BUY higher PUT + SELL lower PUT → debit (bear put spread)")
     void testMixedLegsDebit() {
         TradeOrder t = new TradeOrder("100", "DU4932144");
-        t.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "BUY", "P", "MAIN",
+        t.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "BUY", "P", "MAIN",
                 640, 1, 1, "DU4932144", 1));
-        t.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "P", "",
+        t.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "SELL", "P", "",
                 630, 1, 1, "DU4932144", 2));
 
-        // BUY higher PUT (expensive) + SELL lower PUT (cheap) → debit
-        // creditScore = -(640*1) + (630*1) = -10 → debit
+        // Main leg action = BUY (no netAction set) → fallback → debit
         assertFalse(t.isCreditTrade());
         assertEquals("BUY", t.getDisplayAction());
     }
@@ -256,13 +255,12 @@ public class TradingEndToEndTest {
     @DisplayName("2.5 Mixed legs: SELL higher PUT + BUY lower PUT → credit (bull put spread)")
     void testMixedLegsCredit() {
         TradeOrder t = new TradeOrder("101", "DU4932144");
-        t.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "P", "MAIN",
+        t.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "SELL", "P", "MAIN",
                 640, 1, 1, "DU4932144", 1));
-        t.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "BUY", "P", "",
+        t.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "BUY", "P", "",
                 630, 1, 1, "DU4932144", 2));
 
-        // SELL higher PUT (expensive) + BUY lower PUT (cheap) → credit
-        // creditScore = +(640*1) - (630*1) = +10 → credit
+        // Main leg action = SELL (no netAction set) → fallback → credit
         assertTrue(t.isCreditTrade());
         assertEquals("SELL", t.getDisplayAction());
     }
@@ -272,13 +270,13 @@ public class TradingEndToEndTest {
     @DisplayName("2.6 Single leg BUY → debit; single leg SELL → credit")
     void testSingleLegClassification() {
         TradeOrder buyTrade = new TradeOrder("102", "DU4932144");
-        buyTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "BUY", "C", "MAIN",
+        buyTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "BUY", "C", "MAIN",
                 670, 1, 1, "DU4932144", 1));
         assertFalse(buyTrade.isCreditTrade());
         assertFalse(buyTrade.isComboOrder());
 
         TradeOrder sellTrade = new TradeOrder("103", "DU4932144");
-        sellTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "P", "MAIN",
+        sellTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "SELL", "P", "MAIN",
                 640, 1, 1, "DU4932144", 1));
         assertTrue(sellTrade.isCreditTrade());
         assertFalse(sellTrade.isComboOrder());
@@ -291,9 +289,9 @@ public class TradingEndToEndTest {
     @DisplayName("2.7 Trade1: PLTR short strangle (SELL PUT + SELL CALL) → credit")
     void testTrade1ShortStrangle() {
         TradeOrder t = new TradeOrder("1", "DU4932144");
-        t.addLeg(new TradeOrder.OrderLeg("PLTR", "20260417", "SELL", "P", "MAIN",
+        t.addLeg(new TradeOrder.OrderLeg("PLTR", "20260417", "", "SELL", "P", "MAIN",
                 130, 1, 1, "DU4932144", 1));
-        t.addLeg(new TradeOrder.OrderLeg("PLTR", "20260417", "SELL", "C", "",
+        t.addLeg(new TradeOrder.OrderLeg("PLTR", "20260417", "", "SELL", "C", "",
                 165, 1, 1, "DU4932144", 2));
         assertTrue(t.isCreditTrade(), "Short strangle (all SELL) = credit");
         assertEquals("SELL", t.getDisplayAction());
@@ -304,13 +302,12 @@ public class TradingEndToEndTest {
     @DisplayName("2.8 Trade2: GOOGL bull put spread (SELL PUT 270 + BUY PUT 260) → credit")
     void testTrade2BullPutSpread() {
         TradeOrder t = new TradeOrder("2", "DU4932144");
-        t.addLeg(new TradeOrder.OrderLeg("GOOGL", "20260515", "SELL", "P", "MAIN",
+        t.addLeg(new TradeOrder.OrderLeg("GOOGL", "20260515", "", "SELL", "P", "MAIN",
                 270, 1, 1, "DU4932144", 1));
-        t.addLeg(new TradeOrder.OrderLeg("GOOGL", "20260515", "BUY", "P", "",
+        t.addLeg(new TradeOrder.OrderLeg("GOOGL", "20260515", "", "BUY", "P", "",
                 260, 1, 1, "DU4932144", 2));
-        // SELL higher PUT (expensive) + BUY lower PUT (cheap) → credit
-        // creditScore = +(270) - (260) = +10 → credit
-        assertTrue(t.isCreditTrade(), "Bull put spread = credit (SELL expensive, BUY cheap)");
+        // Main leg action = SELL (no netAction set) → fallback → credit
+        assertTrue(t.isCreditTrade(), "Bull put spread = credit (main leg SELL)");
         assertEquals("SELL", t.getDisplayAction());
     }
 
@@ -319,16 +316,16 @@ public class TradingEndToEndTest {
     @DisplayName("2.9 Trade3: AAPL iron condor → credit")
     void testTrade3IronCondor() {
         TradeOrder t = new TradeOrder("3", "DU4932144");
-        t.addLeg(new TradeOrder.OrderLeg("AAPL", "20260618", "SELL", "P", "MAIN",
+        t.addLeg(new TradeOrder.OrderLeg("AAPL", "20260618", "", "SELL", "P", "MAIN",
                 230, 1, 1, "DU4932144", 1));
-        t.addLeg(new TradeOrder.OrderLeg("AAPL", "20260618", "BUY", "P", "",
+        t.addLeg(new TradeOrder.OrderLeg("AAPL", "20260618", "", "BUY", "P", "",
                 220, 1, 1, "DU4932144", 2));
-        t.addLeg(new TradeOrder.OrderLeg("AAPL", "20260618", "SELL", "C", "",
+        t.addLeg(new TradeOrder.OrderLeg("AAPL", "20260618", "", "SELL", "C", "",
                 260, 1, 1, "DU4932144", 3));
-        t.addLeg(new TradeOrder.OrderLeg("AAPL", "20260618", "BUY", "C", "",
+        t.addLeg(new TradeOrder.OrderLeg("AAPL", "20260618", "", "BUY", "C", "",
                 270, 1, 1, "DU4932144", 4));
-        // PUT: +(230) - (220) = +10; CALL: +(-260) - (-270) = +10; total = +20 → credit
-        assertTrue(t.isCreditTrade(), "Iron condor = credit");
+        // Main leg action = SELL (no netAction set) → fallback → credit
+        assertTrue(t.isCreditTrade(), "Iron condor = credit (main leg SELL)");
         assertEquals("SELL", t.getDisplayAction());
     }
 
@@ -337,12 +334,12 @@ public class TradingEndToEndTest {
     @DisplayName("2.10 Trade4: SPY ratio put spread (BUY PUT 635 r=1 + SELL PUT 620 r=2) → credit")
     void testTrade4RatioPutSpread() {
         TradeOrder t = new TradeOrder("4", "DU4932144");
-        t.addLeg(new TradeOrder.OrderLeg("SPY", "20260410", "BUY", "P", "MAIN",
+        t.addLeg(new TradeOrder.OrderLeg("SPY", "20260410", "SELL", "BUY", "P", "MAIN",
                 635, 1, 1, "DU4932144", 1));
-        t.addLeg(new TradeOrder.OrderLeg("SPY", "20260410", "SELL", "P", "",
+        t.addLeg(new TradeOrder.OrderLeg("SPY", "20260410", "", "SELL", "P", "",
                 620, 2, 1, "DU4932144", 2));
-        // creditScore = -(635*1) + (620*2) = -635 + 1240 = +605 → credit
-        assertTrue(t.isCreditTrade(), "Ratio put spread with 1:2 = credit");
+        // Net Action on main leg = "SELL" → credit (explicitly defined by user)
+        assertTrue(t.isCreditTrade(), "Ratio put spread: Net Action=SELL on main leg → credit");
         assertEquals("SELL", t.getDisplayAction());
     }
 
@@ -450,9 +447,9 @@ public class TradingEndToEndTest {
     @DisplayName("4.4 Credit trade monitoring uses negative alert (trigger above)")
     void testCreditTradeAlertDirection() {
         TradeOrder creditTrade = new TradeOrder("99", "DU4932144");
-        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "P", "MAIN",
+        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "SELL", "P", "MAIN",
                 640, 1, 1, "DU4932144", 1));
-        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "C", "",
+        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "SELL", "C", "",
                 670, 1, 1, "DU4932144", 2));
         creditTrade.setAlertThreshold(5.0);
 
@@ -520,9 +517,9 @@ public class TradingEndToEndTest {
     @DisplayName("5.2 Net combo price for credit: SELL legs = positive net (premium)")
     void testComboNetPriceCredit() {
         TradeOrder creditTrade = new TradeOrder("99", "DU4932144");
-        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "P", "MAIN",
+        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "SELL", "P", "MAIN",
                 640, 1, 1, "DU4932144", 1));
-        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "C", "",
+        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "SELL", "C", "",
                 670, 1, 1, "DU4932144", 2));
 
         Map<String, Double> legPrices = new HashMap<>();
@@ -553,9 +550,9 @@ public class TradingEndToEndTest {
     @DisplayName("5.4 Mixed combo (bull put spread): SELL P 640 + BUY P 630")
     void testMixedComboNetPrice() {
         TradeOrder spread = new TradeOrder("200", "DU4932144");
-        spread.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "P", "MAIN",
+        spread.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "SELL", "P", "MAIN",
                 640, 1, 1, "DU4932144", 1));
-        spread.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "BUY", "P", "",
+        spread.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "BUY", "P", "",
                 630, 1, 1, "DU4932144", 2));
 
         Map<String, Double> legPrices = new HashMap<>();
@@ -592,9 +589,9 @@ public class TradingEndToEndTest {
     @DisplayName("6.2 Credit trade: signed target negative, signed alert negative")
     void testCreditTradeDisplayValues() {
         TradeOrder creditTrade = new TradeOrder("99", "DU4932144");
-        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "P", "MAIN",
+        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "SELL", "P", "MAIN",
                 640, 1, 1, "DU4932144", 1));
-        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "C", "",
+        creditTrade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "SELL", "C", "",
                 670, 1, 1, "DU4932144", 2));
         creditTrade.setTargetPrice(5.0);
         creditTrade.setAlertThreshold(3.0);
@@ -638,38 +635,37 @@ public class TradingEndToEndTest {
             Sheet sheet = wb.createSheet("TEST2");
 
             Row header = sheet.createRow(0);
-            String[] headers = {"Trade ID", "Account", "Symbol", "Expiry", "Action", "Role",
-                    "Strike", "Rate", "QTY", "Target", "Alert", "Active"};
-            for (int i = 0; i < headers.length; i++) {
-                header.createCell(i).setCellValue(headers[i]);
+            for (int i = 0; i <= ExcelOrderImporter.COL_ACTIVE; i++) {
+                header.createCell(i).setCellValue(ExcelOrderImporter.EXCEL_HEADERS[i]);
             }
 
             // Active row
             Row r2 = sheet.createRow(1);
-            r2.createCell(0).setCellValue(1);
-            r2.createCell(1).setCellValue("DU4932144");
-            r2.createCell(2).setCellValue("SPY");
-            r2.createCell(3).setCellValue("20260417");
-            r2.createCell(4).setCellValue("put buy");
-            r2.createCell(5).setCellValue("Main");
-            r2.createCell(6).setCellValue(640);
-            r2.createCell(7).setCellValue(1);
-            r2.createCell(8).setCellValue(1);
-            r2.createCell(9).setCellValue(10);
-            r2.createCell(10).setCellValue(15);
-            r2.createCell(11).setCellValue("Y");
+            r2.createCell(ExcelOrderImporter.COL_TRADE_ID).setCellValue(1);
+            r2.createCell(ExcelOrderImporter.COL_ACCOUNT).setCellValue("DU4932144");
+            r2.createCell(ExcelOrderImporter.COL_SYMBOL).setCellValue("SPY");
+            r2.createCell(ExcelOrderImporter.COL_EXPIRY).setCellValue("20260417");
+            r2.createCell(ExcelOrderImporter.COL_NET_ACTION).setCellValue("BUY");
+            r2.createCell(ExcelOrderImporter.COL_ACTION).setCellValue("put buy");
+            r2.createCell(ExcelOrderImporter.COL_ROLE).setCellValue("Main");
+            r2.createCell(ExcelOrderImporter.COL_STRIKE).setCellValue(640);
+            r2.createCell(ExcelOrderImporter.COL_RATE).setCellValue(1);
+            r2.createCell(ExcelOrderImporter.COL_QTY).setCellValue(1);
+            r2.createCell(ExcelOrderImporter.COL_TARGET).setCellValue(10);
+            r2.createCell(ExcelOrderImporter.COL_ALERT).setCellValue(15);
+            r2.createCell(ExcelOrderImporter.COL_ACTIVE).setCellValue("Y");
 
             // Inactive row for SAME trade — should cause entire trade to be skipped
             Row r3 = sheet.createRow(2);
-            r3.createCell(0).setCellValue(1);
-            r3.createCell(1).setCellValue("DU4932144");
-            r3.createCell(2).setCellValue("SPY");
-            r3.createCell(3).setCellValue("20260417");
-            r3.createCell(4).setCellValue("call buy");
-            r3.createCell(6).setCellValue(670);
-            r3.createCell(7).setCellValue(1);
-            r3.createCell(8).setCellValue(1);
-            r3.createCell(11).setCellValue("N");  // INACTIVE
+            r3.createCell(ExcelOrderImporter.COL_TRADE_ID).setCellValue(1);
+            r3.createCell(ExcelOrderImporter.COL_ACCOUNT).setCellValue("DU4932144");
+            r3.createCell(ExcelOrderImporter.COL_SYMBOL).setCellValue("SPY");
+            r3.createCell(ExcelOrderImporter.COL_EXPIRY).setCellValue("20260417");
+            r3.createCell(ExcelOrderImporter.COL_ACTION).setCellValue("call buy");
+            r3.createCell(ExcelOrderImporter.COL_STRIKE).setCellValue(670);
+            r3.createCell(ExcelOrderImporter.COL_RATE).setCellValue(1);
+            r3.createCell(ExcelOrderImporter.COL_QTY).setCellValue(1);
+            r3.createCell(ExcelOrderImporter.COL_ACTIVE).setCellValue("N");  // INACTIVE
 
             wb.write(fos);
         }
@@ -838,9 +834,9 @@ public class TradingEndToEndTest {
     void testFullFlowCreditTrade() {
         // Build short strangle
         TradeOrder trade = new TradeOrder("99", "DU4932144");
-        trade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "P", "MAIN",
+        trade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "SELL", "P", "MAIN",
                 640, 1, 1, "DU4932144", 1));
-        trade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "SELL", "C", "",
+        trade.addLeg(new TradeOrder.OrderLeg("SPY", "20260417", "", "SELL", "C", "",
                 670, 1, 1, "DU4932144", 2));
         trade.setTargetPrice(5.0);
         trade.setAlertThreshold(8.0);
@@ -913,36 +909,37 @@ public class TradingEndToEndTest {
         try (Workbook wb = new XSSFWorkbook(); FileOutputStream fos = new FileOutputStream(f)) {
             Sheet sheet = wb.createSheet("TEST");
             Row header = sheet.createRow(0);
-            String[] headers = {"Trade ID", "Account", "Symbol", "Expiry", "Action", "Role",
-                    "Strike", "Rate", "QTY", "Target", "Alert", "Active"};
-            for (int i = 0; i < headers.length; i++) {
-                header.createCell(i).setCellValue(headers[i]);
+            for (int i = 0; i <= ExcelOrderImporter.COL_ACTIVE; i++) {
+                header.createCell(i).setCellValue(ExcelOrderImporter.EXCEL_HEADERS[i]);
             }
+            String netAction1 = action1.toUpperCase().contains("SELL") ? "SELL" : "BUY";
 
             Row r2 = sheet.createRow(1);
-            r2.createCell(0).setCellValue(1);
-            r2.createCell(1).setCellValue("DU4932144");
-            r2.createCell(2).setCellValue("SPY");
-            r2.createCell(3).setCellValue("20260417");
-            r2.createCell(4).setCellValue(action1);
-            r2.createCell(5).setCellValue(role1);
-            r2.createCell(6).setCellValue(strike1);
-            r2.createCell(7).setCellValue(1);
-            r2.createCell(8).setCellValue(1);
-            r2.createCell(9).setCellValue(10);
-            r2.createCell(10).setCellValue(15);
-            r2.createCell(11).setCellValue("Y");
+            r2.createCell(ExcelOrderImporter.COL_TRADE_ID).setCellValue(1);
+            r2.createCell(ExcelOrderImporter.COL_ACCOUNT).setCellValue("DU4932144");
+            r2.createCell(ExcelOrderImporter.COL_SYMBOL).setCellValue("SPY");
+            r2.createCell(ExcelOrderImporter.COL_EXPIRY).setCellValue("20260417");
+            r2.createCell(ExcelOrderImporter.COL_NET_ACTION).setCellValue(netAction1);
+            r2.createCell(ExcelOrderImporter.COL_ACTION).setCellValue(action1);
+            r2.createCell(ExcelOrderImporter.COL_ROLE).setCellValue(role1);
+            r2.createCell(ExcelOrderImporter.COL_STRIKE).setCellValue(strike1);
+            r2.createCell(ExcelOrderImporter.COL_RATE).setCellValue(1);
+            r2.createCell(ExcelOrderImporter.COL_QTY).setCellValue(1);
+            r2.createCell(ExcelOrderImporter.COL_TARGET).setCellValue(10);
+            r2.createCell(ExcelOrderImporter.COL_ALERT).setCellValue(15);
+            r2.createCell(ExcelOrderImporter.COL_ACTIVE).setCellValue("Y");
 
             Row r3 = sheet.createRow(2);
-            r3.createCell(0).setCellValue(1);
-            r3.createCell(1).setCellValue("DU4932144");
-            r3.createCell(2).setCellValue("SPY");
-            r3.createCell(3).setCellValue("20260417");
-            r3.createCell(4).setCellValue(action2);
-            r3.createCell(6).setCellValue(strike2);
-            r3.createCell(7).setCellValue(1);
-            r3.createCell(8).setCellValue(1);
-            r3.createCell(11).setCellValue("Y");
+            r3.createCell(ExcelOrderImporter.COL_TRADE_ID).setCellValue(1);
+            r3.createCell(ExcelOrderImporter.COL_ACCOUNT).setCellValue("DU4932144");
+            r3.createCell(ExcelOrderImporter.COL_SYMBOL).setCellValue("SPY");
+            r3.createCell(ExcelOrderImporter.COL_EXPIRY).setCellValue("20260417");
+            // Net Action left empty for child leg
+            r3.createCell(ExcelOrderImporter.COL_ACTION).setCellValue(action2);
+            r3.createCell(ExcelOrderImporter.COL_STRIKE).setCellValue(strike2);
+            r3.createCell(ExcelOrderImporter.COL_RATE).setCellValue(1);
+            r3.createCell(ExcelOrderImporter.COL_QTY).setCellValue(1);
+            r3.createCell(ExcelOrderImporter.COL_ACTIVE).setCellValue("Y");
 
             wb.write(fos);
         }

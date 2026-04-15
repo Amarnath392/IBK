@@ -12,9 +12,15 @@ public class TradeOrder {
         READY, MONITORING, ALERTED, PLACED, ERROR, INACTIVE
     }
     
+    public enum ContractType {
+        STOCK_OPTION,     // OPT - Stock/ETF options (SPY, AAPL)
+        FUTURES_OPTION    // FOP - Futures options (ES, MES)
+    }
+    
     public static class OrderLeg {
         public final String symbol;
         public final String expiry;
+        public final String netAction;
         public final String action;
         public final String optionType;
         public final String role;
@@ -23,11 +29,25 @@ public class TradeOrder {
         public final int quantity;
         public final String account;
         public final int excelRow;
+        // Futures-specific fields
+        public final String futuresMonth;     // YYYYMM format (e.g., "202609" for Sep 2026)
+        public final String exchange;         // CME, GLOBEX, etc.
+        public final ContractType contractType; // STOCK_OPTION or FUTURES_OPTION
         
-        public OrderLeg(String symbol, String expiry, String action, String optionType, String role, 
+        // Constructor for stock options (backward compatible)
+        public OrderLeg(String symbol, String expiry, String netAction, String action, String optionType, String role, 
                        double strike, int rate, int quantity, String account, int excelRow) {
+            this(symbol, expiry, netAction, action, optionType, role, strike, rate, quantity, account, excelRow,
+                 null, null, ContractType.STOCK_OPTION);
+        }
+        
+        // Full constructor for both stock and futures options
+        public OrderLeg(String symbol, String expiry, String netAction, String action, String optionType, String role, 
+                       double strike, int rate, int quantity, String account, int excelRow,
+                       String futuresMonth, String exchange, ContractType contractType) {
             this.symbol = symbol;
             this.expiry = expiry;
+            this.netAction = netAction;
             this.action = action;
             this.optionType = optionType;
             this.role = role;
@@ -36,6 +56,9 @@ public class TradeOrder {
             this.quantity = quantity;
             this.account = account;
             this.excelRow = excelRow;
+            this.futuresMonth = futuresMonth;
+            this.exchange = exchange;
+            this.contractType = contractType;
         }
         
         public int getTotalQuantity() {
@@ -44,8 +67,8 @@ public class TradeOrder {
         
         @Override
         public String toString() {
-            return String.format("%s %d×%d=%d %s %s %.2f (%s)", 
-                action, rate, quantity, getTotalQuantity(), symbol, expiry, strike, role);
+            return String.format("%s %d×%d=%d %s %s %.2f (%s) [net=%s]", 
+                action, rate, quantity, getTotalQuantity(), symbol, expiry, strike, role, netAction);
         }
     }
     
@@ -127,31 +150,19 @@ public class TradeOrder {
     
     public boolean isCreditTrade() {
         if (legs.isEmpty()) return false;
-        if (!isComboOrder()) {
-            return "SELL".equalsIgnoreCase(legs.get(0).action);
+        
+        // Use Net Action from main leg to determine credit/debit
+        // SELL = credit (negative display), BUY = debit (positive display)
+        OrderLeg mainLeg = getMainLeg();
+        if (mainLeg == null) return false;
+        
+        // If netAction is specified, use it
+        if (mainLeg.netAction != null && !mainLeg.netAction.isEmpty()) {
+            return "SELL".equalsIgnoreCase(mainLeg.netAction);
         }
         
-        // All SELL → always credit; all BUY → always debit
-        boolean allSell = legs.stream().allMatch(l -> "SELL".equalsIgnoreCase(l.action));
-        boolean allBuy  = legs.stream().allMatch(l -> "BUY".equalsIgnoreCase(l.action));
-        if (allSell) return true;
-        if (allBuy)  return false;
-        
-        // Mixed directions: use strike-based heuristic per option type
-        // PUT: higher strike = more expensive premium
-        // CALL: lower strike = more expensive premium (negate strike)
-        // SELL expensive + BUY cheap = net credit
-        double creditScore = 0;
-        for (OrderLeg leg : legs) {
-            boolean isPut = "P".equalsIgnoreCase(leg.optionType) || "PUT".equalsIgnoreCase(leg.optionType);
-            double premiumProxy = isPut ? leg.strike : -leg.strike;
-            if ("SELL".equalsIgnoreCase(leg.action)) {
-                creditScore += premiumProxy * leg.rate;
-            } else {
-                creditScore -= premiumProxy * leg.rate;
-            }
-        }
-        return creditScore > 0;
+        // Fallback for legacy data without netAction: use main leg action
+        return "SELL".equalsIgnoreCase(mainLeg.action);
     }
     
     public int getTotalQuantity() {

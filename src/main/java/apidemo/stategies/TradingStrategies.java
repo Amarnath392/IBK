@@ -43,6 +43,7 @@ public class TradingStrategies implements IConnectionHandler {
     private final StrangleStrategyPanel m_stranglePanel = new StrangleStrategyPanel(this);
     private final MultiStockStrategyPanel m_multiStockPanel = new MultiStockStrategyPanel(this);
     private final PreMarketCloseOrderPanel m_preMarketCloseOrderPanel = new PreMarketCloseOrderPanel(this);
+    private final SheetTradesPanel m_futuresPanel = new SheetTradesPanel(this, "Futures");
 
     /**
      * Application entry point. Creates and starts the TradingStrategies application
@@ -148,6 +149,7 @@ public class TradingStrategies implements IConnectionHandler {
         m_tabbedPanel.addTab("📊 Strangle", m_stranglePanel);
         m_tabbedPanel.addTab("📈 Multi Stock", m_multiStockPanel);
         m_tabbedPanel.addTab("⏰ Pre-Market Close", m_preMarketCloseOrderPanel);
+        m_tabbedPanel.addTab("📊 Futures (ES/MES)", m_futuresPanel);
 
         // Configure log areas with better styling
         m_msg.setEditable(false);
