@@ -1061,12 +1061,13 @@ public class SheetTradesPanel extends JPanel implements PriceMonitor.PriceAlertL
         
         if (leg.contractType == TradeOrder.ContractType.FUTURES_OPTION) {
             // Futures Options (FOP) - ES, MES
-            // IB API: lastTradeDateOrContractMonth = option expiry (YYYYMMDD)
-            // Do NOT set multiplier here - IB resolves it from conid; explicit value can cause Error 200
+            // Do NOT set tradingClass: "ES" only matches quarterly series; weekly/daily belong to
+            // EW1/EW2/EW3/EW4/EW5 etc. Leaving it empty lets reqContractDetails find the correct
+            // series for any expiry (daily/weekly/monthly/quarterly) and return the conid.
+            // Do NOT set multiplier — IB resolves it from conid; explicit value can cause Error 200.
             c.secType("FOP");
             c.exchange(leg.exchange != null && !leg.exchange.isEmpty() ? leg.exchange : "CME");
             c.lastTradeDateOrContractMonth(leg.expiry); // YYYYMMDD - specific option expiry
-            c.tradingClass(leg.symbol); // ES or MES - required to distinguish the futures option class
         } else {
             // Stock Options (OPT) - SPY, AAPL, etc.
             c.secType("OPT");

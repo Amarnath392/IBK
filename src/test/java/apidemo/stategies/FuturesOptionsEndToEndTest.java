@@ -182,43 +182,59 @@ public class FuturesOptionsEndToEndTest {
         ExcelOrderImporter.ImportResult result = ExcelOrderImporter.importFromExcel(testFuturesFile);
 
         assertFalse(result.success);
-        assertTrue(result.errors.get(0).contains("cannot be after Futures Month"), 
+        assertTrue(result.errors.get(0).contains("after the Futures Month"), 
             "Error should mention expiry after futures: " + result.errors.get(0));
     }
 
     // ===================================================================
-    // Test 7: Option Expiry Too Early (Invalid)
+    // Test 7: Short-Dated Weekly/Daily Expiry (Must Be Accepted)
     // ===================================================================
     
     @Test
     @Order(7)
-    void testOptionExpiryTooEarly() throws IOException {
+    void testShortDatedWeeklyExpiryAccepted() throws IOException {
+        // Weekly expiry 3 months before the Sep 2026 quarterly futures — must be valid.
+        // ES/MES short-dated (daily/weekly) options can use any quarter's futures as underlying.
         createFuturesExcel("Futures", new Object[][] {
-            {1, "DU4932144", "ES", "202609", "CME", "20260515", "SELL", "CALL SELL", "MAIN", 6600.0, 1, 1, 5.0, 7.5, "Y"}
+            {1, "DU4932144", "ES", "202609", "CME", "20260515", "SELL", "CALL SELL", "MAIN", 5500.0, 1, 1, 5.0, 7.5, "Y"}
         });
 
         ExcelOrderImporter.ImportResult result = ExcelOrderImporter.importFromExcel(testFuturesFile);
 
-        assertFalse(result.success);
-        assertTrue(result.errors.get(0).contains("too early"), 
-            "Error should mention expiry too early: " + result.errors.get(0));
+        assertTrue(result.success, "Short-dated weekly expiry should be accepted. Errors: " + result.errors);
+        assertEquals(0, result.errors.size());
     }
 
     // ===================================================================
-    // Test 8: Valid Option Expiry (1 Month Before Futures)
+    // Test 8: All Expiry Frequencies Accepted (Daily / Weekly / Quarterly)
     // ===================================================================
     
     @Test
     @Order(8)
-    void testValidOptionExpiryOneMonthBefore() throws IOException {
+    void testAllExpiryFrequenciesAccepted() throws IOException {
+        // Daily expiry (next-day)
         createFuturesExcel("Futures", new Object[][] {
-            {1, "DU4932144", "ES", "202609", "CME", "20260820", "SELL", "CALL SELL", "MAIN", 6600.0, 1, 1, 5.0, 7.5, "Y"}
+            {1, "DU4932144", "ES", "202609", "CME", "20260420", "SELL", "CALL SELL", "MAIN", 5500.0, 1, 1, 5.0, 7.5, "Y"}
         });
+        assertTrue(ExcelOrderImporter.importFromExcel(testFuturesFile).success, "Daily expiry should be accepted");
 
-        ExcelOrderImporter.ImportResult result = ExcelOrderImporter.importFromExcel(testFuturesFile);
+        // Weekly expiry (Monday)
+        createFuturesExcel("Futures", new Object[][] {
+            {1, "DU4932144", "ES", "202609", "CME", "20260622", "SELL", "CALL SELL", "MAIN", 5500.0, 1, 1, 5.0, 7.5, "Y"}
+        });
+        assertTrue(ExcelOrderImporter.importFromExcel(testFuturesFile).success, "Weekly (Monday) expiry should be accepted");
 
-        assertTrue(result.success, "Should accept expiry 1 month before futures. Errors: " + result.errors);
-        assertEquals(0, result.errors.size());
+        // Monthly expiry (3rd Friday)
+        createFuturesExcel("Futures", new Object[][] {
+            {1, "DU4932144", "ES", "202609", "CME", "20260821", "SELL", "CALL SELL", "MAIN", 5500.0, 1, 1, 5.0, 7.5, "Y"}
+        });
+        assertTrue(ExcelOrderImporter.importFromExcel(testFuturesFile).success, "Monthly expiry should be accepted");
+
+        // Quarterly expiry (same month as futures)
+        createFuturesExcel("Futures", new Object[][] {
+            {1, "DU4932144", "ES", "202609", "CME", "20260918", "SELL", "CALL SELL", "MAIN", 5500.0, 1, 1, 5.0, 7.5, "Y"}
+        });
+        assertTrue(ExcelOrderImporter.importFromExcel(testFuturesFile).success, "Quarterly expiry should be accepted");
     }
 
     // ===================================================================

@@ -351,39 +351,37 @@ public class ExcelOrderImporter {
     }
     
     private static void validateOptionExpiryForFutures(String futuresMonth, String optionExpiry) throws Exception {
-        // Option expiry should be within the futures contract month or 1 month prior
-        // Example: Sep 2026 futures (202609) → options can expire Aug-Sep 2026
+        // Validate format only; daily/weekly/monthly/quarterly expiries are all allowed.
+        // ES/MES short-dated options can expire any date before the underlying futures contract.
+        // IB's reqContractDetails will reject any date that has no listed contract.
         
         if (optionExpiry.length() != 8 || !optionExpiry.matches("\\d{8}")) {
-            // Skip validation if expiry is in non-standard format (will be caught by IB API)
-            return;
+            throw new Exception("Option Expiry must be 8 digits in YYYYMMDD format (e.g., 20260620). Found: '" + optionExpiry + "'");
         }
         
-        int futuresYear = Integer.parseInt(futuresMonth.substring(0, 4));
-        int futuresMonthNum = Integer.parseInt(futuresMonth.substring(4, 6));
-        
-        int expiryYear = Integer.parseInt(optionExpiry.substring(0, 4));
+        int expiryYear  = Integer.parseInt(optionExpiry.substring(0, 4));
         int expiryMonth = Integer.parseInt(optionExpiry.substring(4, 6));
+        int expiryDay   = Integer.parseInt(optionExpiry.substring(6, 8));
         
-        // Convert to comparable format: YYYYMM as integer
-        int futuresYYYYMM = futuresYear * 100 + futuresMonthNum;
-        int expiryYYYYMM = expiryYear * 100 + expiryMonth;
-        
-        // Calculate one month before futures month
-        int oneMonthBefore = futuresMonthNum == 1 ? (futuresYear - 1) * 100 + 12 : futuresYear * 100 + (futuresMonthNum - 1);
-        
-        if (expiryYYYYMM < oneMonthBefore) {
-            throw new Exception(String.format(
-                "Option Expiry (%s) is too early. For Futures Month %s, option must expire in %04d%02d or later",
-                optionExpiry, futuresMonth, oneMonthBefore / 100, oneMonthBefore % 100
-            ));
+        if (expiryYear < 2020 || expiryYear > 2050) {
+            throw new Exception("Option Expiry year must be between 2020-2050. Found: " + expiryYear);
+        }
+        if (expiryMonth < 1 || expiryMonth > 12) {
+            throw new Exception("Option Expiry month must be 01-12. Found: " + expiryMonth);
+        }
+        if (expiryDay < 1 || expiryDay > 31) {
+            throw new Exception("Option Expiry day must be 01-31. Found: " + expiryDay);
         }
         
-        if (expiryYYYYMM > futuresYYYYMM) {
-            throw new Exception(String.format(
-                "Option Expiry (%s) cannot be after Futures Month (%s). Options expire before/with futures contract",
-                optionExpiry, futuresMonth
-            ));
+        // Soft check: warn (not error) if expiry exceeds the futures contract month
+        if (futuresMonth != null && futuresMonth.matches("\\d{6}")) {
+            int futuresYYYYMM = Integer.parseInt(futuresMonth);
+            int expiryYYYYMM  = expiryYear * 100 + expiryMonth;
+            if (expiryYYYYMM > futuresYYYYMM) {
+                throw new Exception(String.format(
+                    "Option Expiry (%s) is after the Futures Month (%s). Options must expire on or before the underlying futures.",
+                    optionExpiry, futuresMonth));
+            }
         }
     }
     
